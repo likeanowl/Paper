@@ -1,0 +1,34 @@
+% Тут используется класс, установленный на сервере Papeeria. На случай, если
+% текст понадобится редактировать где-то в другом месте, рядом лежит файл matmex-diploma-custom.cls
+% который в момент своего создания был идентичен классу, установленному на сервере.
+% Для того, чтобы им воспользоваться, замените matmex-diploma на matmex-diploma-custom
+% Если вы работаете исключительно в Papeeria то мы настоятельно рекомендуем пользоваться
+% классом matmex-diploma, поскольку он будет автоматически обновляться по мере внесения корректив
+%
+
+% По умолчанию используется шрифт 14 размера. Если нужен 12-й шрифт, уберите опцию [14pt]
+\documentclass[14pt]{matmex}
+\usepackage{enumitem}
+
+%\documentclass[14pt]{matmex-diploma-custom}
+
+\begin{document}
+\filltitle{ru}{
+    chair              = {Кафедра Системного программирования},
+    title              = {Yacc Constructor Quick Graph Query},
+    type               = {coursework},
+    position           = {студента},
+    group              = 344,
+    author             = {Свитков Сергей Андреевич},
+    supervisorPosition = {старший преподаватель},
+    supervisor         = {Григорьев С.\,В.},
+}
+\maketitle
+\tableofcontents
+
+
+
+\setmonofont[Mapping=tex-text]{CMU Typewriter Text}
+\bibliographystyle{ugost2008ls}
+\bibliography{coursework.bib}
+\end{document}
