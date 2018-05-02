@@ -12,37 +12,78 @@
 \usepackage{polyglossia}
 \setdefaultlanguage{russian}
 \usepackage{graphicx}
-\usepackage{listings}
-\lstdefinestyle{mycode}{
-  belowcaptionskip=1\baselineskip,
-  breaklines=true,
-  xleftmargin=\parindent,
-  showstringspaces=false,
-  basicstyle=\footnotesize\ttfamily,
-  keywordstyle=\bfseries,
-  commentstyle=\itshape\color{gray!40!black},
-  stringstyle=\color{red},
-  numbers=left,
-  numbersep=5pt,
-  numberstyle=\tiny\color{gray},
-}
-\lstset{escapechar=@,style=mycode}
+\usepackage{minted}
+%\lstdefinestyle{mycode}{
+%  belowcaptionskip=1\baselineskip,
+%  breaklines=true,
+%  xleftmargin=\parindent,
+%  showstringspaces=false,
+%  basicstyle=\footnotesize\ttfamily,
+%  keywordstyle=\bfseries,
+%  commentstyle=\itshape\color{gray!40!black},
+%  stringstyle=\color{red},
+%  numbers=left,
+%  numbersep=5pt,
+%  numberstyle=\tiny\color{gray},
+%}
+%\lstset{escapechar=@,style=mycode}
 
 \begin{document}
-\title{Реализация библиотеки для потоковой обработки .xlxs файлов}
+\title{Реализация библиотеки для потоковой обработки .xlsx файлов}
 %%\subtitle{предварительные результаты}
 \author{Свитков Сергей\\{\footnotesize\textcolor{gray}{группа 344\\научный руководитель Ю.В. Литвинов\\консультант М.В. Заведеев}}}
-\institute{СПБГУ\\кафедра системного программирования}
+\institute{СПбГУ\\кафедра системного программирования}
 \frame{\titlepage}
 
 \begin{frame}\frametitle{Введение}
 \begin{itemize}
-    \item Веб-приложения
+    \item Веб-приложения в сфере биллинга, телекоммуникаций
     \item Различные отчеты, статистика
-    \item Формат .xlxs
+    \item Формат .xlsx
+    \item Потоковая обработка для экономии памяти
 \end{itemize}
 \end{frame}
 
+\begin{frame}\frametitle{Существующие решения}
+\begin{itemize}
+    \item Apache POI
+    \begin{itemize}
+        \item До версии 3.8 --- только работа in-memory
+        \item Начиная с 3.8 --- Stream-API для записи, Event-API для чтения
+        \item Часть операций всё равно только in-memory
+        \item Отсутствие полных и подробных примеров работы с Stream-API
+    \end{itemize}
+    \item SJXLSX
+    \begin{itemize}
+        \item Не поддерживается с 2015 года
+    \end{itemize}
+    \item Excel Streaming Reader
+    \begin{itemize}
+        \item Разработка коммьюнити
+        \item Обертка над POI
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Итоги обзора}
+\begin{itemize}
+    \item Stream-API POI всё равно имеет проблемы с памятью
+    \item Библиотеки, реализованные коммьюнити, эти проблемы не решают
+    \item Для записи в файл стоит создать свою реализацию
+    \item Для чтения можно использовать парсер POI
+    \item Полученную реализацию сравнить с существующими
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Постановка задачи}
+\begin{itemize}
+    \item Реализовать библиотеку для потоковой обработки xlsx файлов
+    \item Написать документацию
+    \item Опубликовать библиотеку в Maven
+    \item Провести апробацию
+    \item Сравнить полученную реализацию с существующими
+\end{itemize}
+\end{frame}
 %\lstset{language=java}
 %\begin{frame}[fragile]\frametitle{Алгоритм}
 %\begin{lstlisting}
