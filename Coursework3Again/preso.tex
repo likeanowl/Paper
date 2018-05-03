@@ -65,25 +65,30 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}\frametitle{Итоги обзора}
-\begin{itemize}
-    \item Stream-API POI всё равно имеет проблемы с памятью
-    \item Библиотеки, реализованные коммьюнити, эти проблемы не решают
-    \item Для записи в файл стоит создать свою реализацию
-    \item Для чтения можно использовать парсер POI
-    \item Полученную реализацию сравнить с существующими
-\end{itemize}
-\end{frame}
-
 \begin{frame}\frametitle{Постановка задачи}
 \begin{itemize}
     \item Реализовать библиотеку для потоковой обработки xlsx файлов
-    \item Написать документацию
     \item Опубликовать библиотеку в Maven
     \item Провести апробацию
     \item Сравнить полученную реализацию с существующими
 \end{itemize}
 \end{frame}
+
+\begin{frame}\frametitle{Реализация}
+\begin{itemize}
+    \item Идея: использовать временные файлы на диске для экономии RAM
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Результаты}
+\begin{itemize}
+    \item Реализована библиотека для потоковой обработки xlsx файлов (ещё нет)
+    \item Реализация опубликована в репозитории Maven (ещё нет)
+    \item Проведена апробация библиотеки (ещё нет)
+    \item Проведено сравнение реализации с существующими решениями (ещё нет)
+\end{itemize}
+\end{frame}
+
 %\lstset{language=java}
 %\begin{frame}[fragile]\frametitle{Алгоритм}
 %\begin{lstlisting}
