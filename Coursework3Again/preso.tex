@@ -12,21 +12,6 @@
 \usepackage{polyglossia}
 \setdefaultlanguage{russian}
 \usepackage{graphicx}
-\usepackage{minted}
-%\lstdefinestyle{mycode}{
-%  belowcaptionskip=1\baselineskip,
-%  breaklines=true,
-%  xleftmargin=\parindent,
-%  showstringspaces=false,
-%  basicstyle=\footnotesize\ttfamily,
-%  keywordstyle=\bfseries,
-%  commentstyle=\itshape\color{gray!40!black},
-%  stringstyle=\color{red},
-%  numbers=left,
-%  numbersep=5pt,
-%  numberstyle=\tiny\color{gray},
-%}
-%\lstset{escapechar=@,style=mycode}
 
 \begin{document}
 \title{Реализация библиотеки для потоковой обработки .xlsx файлов}
@@ -67,6 +52,7 @@
 
 \begin{frame}\frametitle{Постановка задачи}
 \begin{itemize}
+    \item Изучить существующие решения и формат xlsx
     \item Реализовать библиотеку для потоковой обработки xlsx файлов
     \item Опубликовать библиотеку в Maven
     \item Провести апробацию
@@ -74,18 +60,78 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}\frametitle{Реализация}
+\begin{frame}\frametitle{XLSX}
 \begin{itemize}
-    \item Идея: использовать временные файлы на диске для экономии RAM
+    \item zip-архив с xml файлами
+    \item Структура:
+    \begin{itemize}
+        \item \texttt{Content\_Types}.xml --- типы контента в архиве и пути к ним
+        \item \texttt{\_rels} --- зависимости между файлами внутри архива
+        \item docProps --- метаданные: имя автора, дата создания, ...
+        \item xl --- директория с основными файлами архива: workbook, страницы, стили, таблицы
+    \end{itemize}
 \end{itemize}
 \end{frame}
 
-\begin{frame}\frametitle{Результаты}
+\begin{frame}\frametitle{XLSX}
 \begin{itemize}
-    \item Реализована библиотека для потоковой обработки xlsx файлов (ещё нет)
-    \item Реализация опубликована в репозитории Maven (ещё нет)
-    \item Проведена апробация библиотеки (ещё нет)
-    \item Проведено сравнение реализации с существующими решениями (ещё нет)
+    \item Workbook:
+    \begin{itemize}
+        \item Метаданные
+        \item Ссылки на страницы с данными
+    \end{itemize}
+    \item Worksheet:
+    \begin{itemize}
+        \item Содержат данные
+        \item 3 формата представления данных: Grid, Chart, Dialog 
+    \end{itemize}
+    \item Grid:
+    \begin{itemize}
+        \item Данные разбиты на ряды;
+        \item Каждый ряд состоит из ячеек, в которых хранятся значения
+        \item В каждой ячейке хранятся номер ряда и тип значения
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Реализация: подход}
+\begin{itemize}
+    \item Запись:
+    \begin{itemize}
+        \item Для каждой страницы создавать временный файл
+        \item Хранить в RAM только один ряд (во время создания)
+        \item После создания добавлять ряд во временный файл страницы
+        \item После завершения формирования документа --- записывать данные из временных файлов в основной файл
+        \item Для экономии дискового пространства сжимать временные файлы
+    \end{itemize}
+    \item Чтение:
+    \begin{itemize}
+        \item Использовать парсер POI
+        \item Реализовать механизм передачи прочитанных данных пользовательскому обработчику
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+  \transwipe[direction=90]
+  \frametitle{Архитектура решения}
+  Упрощенная архитектура решения:
+  \includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{arc.png}
+\end{frame}
+
+\begin{frame}\frametitle{Реализация}
+\begin{itemize}
+    \item Хранить in-memory только один ряд
+    \item Уже созданные ряды записывать во временные файлы на диск
+    \item Для экономии дискового пространства сжимать временные файлы
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Текущие результаты}
+\begin{itemize}
+    \item Проведён анализ существующих решений и формата xlsx
+    \item Разработана архитектура библиотеки
+    \item Почти закончена реализация библиотеки
 \end{itemize}
 \end{frame}
 
