@@ -48,6 +48,24 @@
 }
 
 
+\lstdefinestyle{basic}{  
+  basicstyle=\footnotesize\ttfamily,
+  numbers=left,
+  numberstyle=\tiny\color{gray}\ttfamily,
+  numbersep=5pt,
+  backgroundcolor=\color{white},
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  frame=single,
+  rulecolor=\color{black},
+  captionpos=b,
+  keywordstyle=\color{blue}\bf,
+  commentstyle=\color{gray},
+  stringstyle=\color{green},
+  keywordstyle={[2]\color{red}\bf},
+}
+
 \lstdefinelanguage{XML}
 {
   morestring=[s][\color{mauve}]{"}{"},
@@ -88,7 +106,7 @@
 
 Одну из категорий веб-приложений представляют проекты в сфере телекоммуникаций и биллинга. Такие приложения используются операторами связи для анализа различной статистики по действиям абонентов: перемещения между зонами роуминга, количество входящих/исходящих вызовов, и т.д.
 
-Для формирования отчётов требуется формат представления данных, предоставляющий строгое структурирование. К таким можно отнести JSON, XML, XLSX. Однако, следует принять во внимание, что отчетность или статистика, представленная в таком формате, может использоваться как при взаимодействии различных компонент приложения или различных приложений, так и для анализа человеком. Преимущество формата XLSX в том, что для открытия таких файлов существуют общеизвестные решения (Microsoft Excel, OpenOffice Calc, Google Sheets). 
+Для формирования отчётов требуется формат представления данных, предоставляющий строгое структурирование. К таким можно отнести JSON \cite{json}, XML \cite{xml}, XLSX \cite{xlsx}. Однако, следует принять во внимание, что отчетность или статистика, представленная в таком формате, может использоваться как при взаимодействии различных компонент приложения или различных приложений, так и для анализа человеком. Преимущество формата XLSX в том, что для просмотра таких файлов существуют общеизвестные решения (Microsoft Excel, OpenOffice Calc, Google Sheets). 
 
 Таким образом, возникает необходимость в библиотеке, которая позволила бы формировать документы формата XLSX. Следует отметить, что, поскольку объем данных не ограничен, а веб-приложения являются многопользовательскими, то необходимо формировать файл в потоковом режиме, то есть, держать в оперативной памяти только ограниченное количество данных. 
 
@@ -96,17 +114,22 @@
 \section{Обзор существующих решений}
 Задача формирования документов формата XLSX не является новой, имеется ряд существующих библиотек.
 \subsection{Apache POI}
-    Библиотека Apache POI (далее --- просто POI)предоставляет средства как для формирования, так и для чтения файлов формата .xlsx . До версии 3.8 в библиотеке отсутствовала поддержка потоковой обработки файлов. Несмотря на то, что, начиная с версии 3.8, появилась поддержка потоковой обработки, некоторые проблемы с использованием оперативной памяти остались. Так, некоторые операции над документами всё равно можно проводить только храня целый документ в памяти. К недостаткам библиотеки можно отнести отсутствие возможности задать условия автоматического создания новых страниц в документе, а так же отсутствие полной документации и примеров использования.
+    Библиотека Apache POI \cite{poi} (далее --- просто POI) предоставляет средства как для формирования, так и для чтения файлов формата XLSX . До версии 3.8 в библиотеке отсутствовала поддержка потоковой обработки файлов. Несмотря на то, что, начиная с версии 3.8, появилась поддержка потоковой обработки, некоторые проблемы с использованием оперативной памяти остались. Так, некоторые операции над документами всё равно можно проводить только храня целый документ в памяти. К недостаткам библиотеки можно отнести отсутствие возможности задать условия автоматического создания новых страниц в документе, а так же отсутствие полной документации и примеров использования.
     
-    Было проведено тестирование библиотеки на количество памяти, требуемое для формирования XLSX файла размером в 1 млн рядов из 50 колонок. Результаты на [рис. 1] //построить график. Из эксперимента можно сделать выводы о том, что, несмотря на наличие возможности потокового формирования файла, с памятью всё равно есть проблемы. 
-    
-    На момент начала данной работы не было известно о том, что в POI реализована поддержка потоковой обработки документов, что во многом и послужило мотивацией для данной задачи. После анализа последней версии библиотеки было решено реализовать собственный алгоритм потокового формирования документов и сравнить полученную реализацию с POI по производительности.
+    На момент начала данной работы не было известно о том, что в POI реализована поддержка потоковой обработки документов, что во многом и послужило мотивацией для постановки задачи о реализации своей библиотеки. После анализа последней версии библиотеки было решено реализовать собственный алгоритм потокового формирования документов и сравнить полученную реализацию с POI по производительности.
     
 \subsection{SJXLSX}
-    Библиотека SJXLSX --- разработка коммьюнити. Документации в проекте крайне мало, к тому же последнее обновление в репозитории было сделано в 2015м году. Был проведен эксперимент по проверке на количество затрачиваемой памяти, результаты эксперимента [рис. 2] // ещё один график. Из эксперимента можно сделать выводы о том, что по количеству используемой операционной памяти при генерации файла данная реализация является крайне неэффективной.
+    \begin{figure*}
+        \centering
+        \includegraphics[width=\textwidth]{pics/SJXLSX.png}
+        \caption{График потребления оперативной памяти библиотекой SJXLSX при генерации файла XLSX размером в 100 тысяч рядов \label{sjxlsx}}
+    \end{figure*}
+    Библиотека SJXLSX \cite{sjxlsx}--- проект с открытым исходным кодом. Документации к проекту крайне мало, к тому же, последнее обновление в репозитории было сделано в 2015м году. 
+    
+    Был проведен эксперимент по проверке реализации на количество затрачиваемой операционной памяти. С использованием данной библиотеки был сгенерирован файл из 100 тысяч строк, запись производилась фрагментами по 1 тысячи строк с интервалом в 5 секунд. Объем используемой памяти измерялся с помощью JConsole. Из графика (рис. \ref{sjxlsx}), полученного в результате эксперимента, можно сделать выводы о том, что по количеству используемой операционной памяти при генерации файла данная реализация является крайне неэффективной.
     
 \subsection{Итоги обзора}
-    Исходя из результатов обзора было принято решение о реализации библиотеки для потоковой генерации файлов и последующем сравнении её с двумя существующими решениями.
+    Исходя из результатов обзора было принято решение о реализации библиотеки для потоковой генерации файлов и последующем сравнении её с рассмотренными существующими решениями.
     
 \section{Постановка задачи}
 Целью данной работы является разработка библиотеки для потоковой обработки файлов формата xlsx и сравнение её с существующими реализациями.
@@ -115,17 +138,17 @@
     \item сформулировать подход, который будет использоваться для реализации библиотеки;
     \item реализовать библиотеку;
     \item провести апробацию полученной реализации;
-    \item сравнить полученную реализацию с существующими по метрикам:
-    \begin{itemize}
-        \item потребление RAM при создании документа;
-        \item скорость работы;
-    \end{itemize}
+    \item сравнить полученную реализацию с существующими библиотеками по потреблению RAM (оперативной памяти) при создании документа;
     \item разместить исходный код и примеры использования библиотеки на github;
 \end{itemize}
 
 \section{Анализ формата XLSX}
-Перед началом реализации библиотеки было необходимо изучить структуру формата XLSX
-Формат XLSX был создан в декабре 2006 года при участии Microsoft, Ecma, ISO/IEC. К сожалению, документации по стандарту MS-XLSX крайне мало, в открытом доступе можно найти только два стандарта: ISO/IEC 29500 (2008) и ECMA-376 1st edition (2006). Эти документы имеют крайне большой объем (порядка 7 тысяч страниц), и на их изучение ушло бы большое количество времени. Для формата XLSX так же существует другой стандарт, Open Office XML. В отличие от стандарта MS-XLSX, данный стандарт довольно хорошо документирован, поэтому было принято решение формировать документы в соответствии с данным стандартом.
+Для реализации бибилотеки потребовалось изучить структуру формата XLSX.
+
+
+Формат XLSX был создан в декабре 2006 года при участии Microsoft, Ecma, ISO/IEC. К сожалению, документации по стандарту MS-XLSX крайне мало, в открытом доступе можно найти два стандарта: ISO/IEC 29500 \cite{isostd} и ECMA-376 \cite{ecmastd}. Эти документы имеют крайне большой объем (порядка 7 тысяч страниц), и на их изучение ушло бы большое количество времени. 
+
+Для формата XLSX так же существует другой стандарт, OOXML \cite{ooxml}. В отличие от MS-XLSX, данный стандарт довольно хорошо документирован, поэтому было принято решение формировать документы в соответствии с данным стандартом.
 
 Формат XLSX представляет собой ZIP-архив с XML файлами. Его структура (рис. \ref{xlsx_tree}) представляет собой следующий набор файлов и директорий:
 \begin{itemize}
@@ -137,13 +160,13 @@
 
 \begin{figure*}
      \centering
-     \includegraphics{xlsx_tree.png}
+     \includegraphics{pics/xlsxstruct.png}
      \caption{Структура формата XLSX}\label{xlsx_tree}
 \end{figure*}
 
 Рассмотрим более подробно основные компоненты архива: Workbook и Worksheet.
 \subsection{Workbook}
-Workbook представляет собой XML-файл, который не содержит данных файла, но содержит следующие мета-данные: ссылки на отдельные Worksheet и их свойства. Пример файла workbook.xml: листинг \ref{list1}. Контент документа содержится непосредственно в Worksheets.
+Workbook представляет собой XML-файл, который не содержит данных файла, но содержит следующие мета-данные: ссылки на отдельные Worksheet и их свойства. В работе приведён пример файла workbook.xml (листинг \ref{list1}). Контент документа содержится непосредственно в Worksheets.
 \subsection{Worksheet}
 Worksheet содержат данные, из которых и состоит документ. Worksheet может иметь один из следующих форматов: grid, chart, dialog sheet. Наиболее популярным и хорошо задокументированным является grid, рассмотрим его более подробно. 
 
@@ -151,7 +174,7 @@ Grid представляет собой "сетку" из "клеток" (cells
 
 Закончив анализ формата XLSX можно приступить к реализации библиотеки.
 \section{Реализация}
-В данной секции будут описаны алгоритм работы и архитектура библиотеки. Библиотека была реализована на языке Java с использованием системы сборки Maven. Исходный код реализации библиотеки опубликован на Github https://github.com/protei-rnd/oxml-doc. Работа велась под учётной записью likeanowl. Код реализации опубликован под лицензией MIT.
+В данной секции будут описаны алгоритм работы и архитектура библиотеки. Библиотека была реализована на языке Java с использованием системы сборки Maven. Исходный код реализации библиотеки опубликован на Github в репозитории организации "НТЦ Протей"\footnote{https://github.com/protei-rnd/oxml-doc}. Работа велась под учётной записью likeanowl\footnote{https://github.com/likeanowl}. Код реализации опубликован под лицензией MIT.
 \subsection{Алгоритм}
 Было принято решение реализовать следующий алгоритм для генерации файлов формата XLSX:
 \begin{itemize}
@@ -163,26 +186,47 @@ Grid представляет собой "сетку" из "клеток" (cells
 \end{itemize}
 
 \subsection{Архитектура}
-Для реализации предлагаемого алгоритма была реализована следующая архитектура (рис. \ref{arch.png}).
-//картинка с диаграммой
-Основными элементами приложения являются классы WorkbookWriter и Worksheet. StreamConsumer служит для хранения списка временных файлов, генерируемых при создании документа, а так же позволяет создать InputStream из хранимых файлов. Класс ConnInfo служит для связи SmartOutputStream и StreamConsumer. SmartOutputStream служит для создания OutputStream из временных файлов и записи в них. SheetDescriptor используется связи Worksheet и StreamConsumer. 
+Для реализации предлагаемого алгоритма была реализована следующая архитектура (рис. \ref{arch_lib}).
+
+    \begin{figure*}
+        \centering
+        \includegraphics[width=\textwidth]{pics/arch.png}
+        \caption{Архитектура библиотеки, упрощённый вариант\label{arch_lib}}
+    \end{figure*}
+
+Основными элементами приложения являются классы WorkbookWriter и Worksheet. StreamConsumer служит для хранения списка временных файлов, генерируемых при создании документа, а так же позволяет создать InputStream из хранимых файлов. Класс ConnInfo служит для связи SmartOutputStream и StreamConsumer. SmartOutputStream служит для создания OutputStream из временных файлов и записи в них. SheetDescriptor используется связи Worksheet и StreamConsumer. SmartStreamFactory используется для управления открытыми SmartOutputStream и создания новых экземпляров этого класса.
 
 Таким образом, полный цикл формирования документа выглядит следующим образом: 
 \begin{itemize}
     \item WorkbookWriter создаёт новую страницу, создавая для неё SheetDescriptor, StreamConsumer и SmartOutputStream. Из OutputStream, полученного из SmartOutputStream, создаётся ZipOutputStream для нового временного файла. Созданная страница помечается как готовая к записи.
     \item После создания страницы к ней можно добавлять ряды. Каждый ряд обрабатывается, применяются стили, если они были заданы для ряда, пишется заголовок файла, если он ещё не был записан. В том случае, когда задано ограничение на максимальное количество рядов для одной страницы, происходит автоматическое разбиение и в WorkbookWriter создается новый экземпляр Workheet.
-    \item После завершения формирования документа, происходит формирование архива с XML файлами. Это делается путём обхода SheetDescriptor, созданных для страниц документа. Из временных файлов при помощи StreamConsumer создается SequenceInputStream, контент из данного потока пишется в соответствующий странице файл архива. 
+    \item После завершения формирования документа, происходит формирование архива с XML файлами. Это делается путём обхода списка SheetDescriptor, созданных для страниц документа. Из временных файлов при помощи StreamConsumer создается SequenceInputStream, контент из данного потока пишется в соответствующий странице файл архива. 
 \end{itemize}
-В репозитории с исходным кодом были размещены примеры использования библиотеки.
+В репозитории с исходным кодом были размещены примеры (листинг \ref{java1}, листинг \ref{java2}) использования библиотеки.
 \section{Апробация}
 Было принято решение сравнить полученную реализацию библиотеки с существующими решениями по следующим метрикам: количество потребляемой при генерации файла оперативной памяти и скорость работы.
 Эксперименты проводились на машине с конфигурацией: 
 \begin{itemize}
     \item CPU --- Intel i7-7700
     \item RAM --- DDR4 2400 MHz, 16 Gb
-    \item SSD --- SATA 3, 340 MB/s
+    \item SSD --- SATA 3, скорость записи 340 MB/s
 \end{itemize}
-//построить график
+
+В ходе тестирования библиотек на количество используемой оперативной памяти формировались файлы размером 100 тысяч рядов. Генерация производилась добавлением порций данных по 1000 строк с интервалом в 5 секунд между итерациями. 
+
+\begin{figure*}
+    \centering
+    \includegraphics[width=\textwidth]{pics/triple.png}
+    \caption{Сравнение библиотек oxml-doc, Apache POI, SJXLSX по количеству потребляемой оперативной памяти при генерации файлов \label{triple}}
+\end{figure*}
+
+\begin{figure*}
+    \centering
+    \includegraphics[width=\textwidth]{pics/poioxml.png}
+    \caption{Сравнение библиотек oxml-doc, Apache POI по количеству потребляемой оперативной памяти при генерации файлов \label{double}}
+\end{figure*}    
+
+Результаты эксперимента (рис. \ref{triple}, рис. \ref{double}) показали, что реализованная в рамках данной работы библиотека по количеству используемой RAM находится на одном уровне с Apache POI, при этом Apache POI и oxml-doc показывают гораздо более хорошие результаты, чем SJXLSX.
 
 % У заключения нет номера главы
 \section*{Заключение}
@@ -190,16 +234,13 @@ Grid представляет собой "сетку" из "клеток" (cells
 \begin{itemize}
     \item реализована библиотека для потоковой записи файлов формата XLSX;
     \item проведена апробация реализации;
-    \item проведено сравнение реализации с существующими по метрикам:
-    \begin{itemize}
-        \item потребление RAM при создании документа;
-        \item скорость работы;
-    \end{itemize}
+    \item проведено сравнение реализации с существующими библиотеками по количеству используемой RAM при создании документа;
     \item исходный код и примеры использования библиотеки опубликованы на github;
-    \item сборка библиотеки опубликована в maven-central (ещё нет).
+    \item сборка библиотеки опубликована в maven-central.
 \end{itemize}
+
 \section*{Листинги}
-\begin{lstlisting}[language=XML, caption={Пример файла workbook.xml},captionpos=b, label=list1]
+\begin{lstlisting}[language=XML, style=basic, caption={Пример файла workbook.xml},captionpos=b, label=list1]
 <workbook . . .>
     . . .
     <workbookPr . . ./>
@@ -212,7 +253,7 @@ Grid представляет собой "сетку" из "клеток" (cells
 </workbook>
 \end{lstlisting}
 
-\begin{lstlisting}[language=XML, caption={Пример файла worksheet.xml},captionpos=b, label=list2]
+\begin{lstlisting}[language=XML, style=basic, caption={Пример файла worksheet.xml},captionpos=b, label=list2]
 <worksheet . . .>
 . . .
     <cols>
@@ -244,6 +285,120 @@ Grid представляет собой "сетку" из "клеток" (cells
 </worksheet>
 \end{lstlisting}
 
+\begin{lstlisting}[language=Java, style=basic, caption={Пример создания простого документа XLSX с помощью библиотеки oxml-doc}, captionpos=b, label=java1]
+try (WorkBookWriter writer = new WorkBookWriter(1000, RowLimitRules.SPLIT)) {
+    final WorkSheet sheet = writer.createNewSheet("sheet");
+    final Row row = new Row();
+    for (int i = 0; i < 1000; i++) {
+        for (int j = 0; j < 55; j++)
+            row.append("test");
+        sheet = sheet.appendRow(row);
+        row.clear();
+    }
+    writer.writeTo(new File("Test.xlsx"));
+} catch (Throwable e) {
+    e.printStackTrace();
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=Java, style=basic, caption={Пример создания документа XLSX с форматированием с помощью библиотеки oxml-doc}, captionpos=b, label=java2]
+try (WorkBookWriter writer = new WorkBookWriter()) {
+    // base text font
+    final Font textFont = writer.createFont();
+    textFont.setFontSize("11");
+    textFont.setName("Calibri");
+    textFont.setColor("FF2020FF");
+
+    // headers text font
+    final Font headerFont = writer.createFont();
+    headerFont.setFontSize("11");
+    headerFont.setName("Calibri");
+    headerFont.setColor("FF2020F0");
+    headerFont.setBold(true);
+
+    // special font for the best sold items
+    final Font bestSoldFont = writer.createFont();
+    bestSoldFont.setFontSize("11");
+    bestSoldFont.setName("Calibri");
+    bestSoldFont.setColor("FFF02020");
+
+    // headers fill
+    final Fill emptyFill = writer.createFill();
+
+    final Fill headerFill = writer.createFill();
+    headerFill.setPattern(FillPattern.SOLID);
+    headerFill.setBackgroundColor(new Color(0xFFD0D0D0));
+    headerFill.setFrontColor(new Color(0xFFD0D0D0));
+
+    // cpecial fill for price column
+    final Fill priceFill = writer.createFill();
+    priceFill.setPattern(FillPattern.SOLID);
+    priceFill.setBackgroundColor(new Color(0xFFFFFF00));
+    priceFill.setFrontColor(new Color(0xFFFFFF00));
+
+
+    // base style
+    final CellStyle baseStyle = writer.createCellStyle();
+    baseStyle.setFont(textFont);
+
+    // header style
+    final CellStyle headerStyle = writer.createCellStyle();
+    headerStyle.setFont(headerFont);
+    headerStyle.setFill(headerFill);
+    headerStyle.setAligment(new Aligment(HorizontalAligment.CENTER, false, VerticalAligment.CENTER));
+
+    // header row style
+    final RowStyle headerRowStyle = new RowStyle(30, headerStyle, true, true);
+
+    // price column style
+    final CellStyle priceColumnStyle = writer.createCellStyle();
+    priceColumnStyle.setFont(headerFont);
+    priceColumnStyle.setFill(priceFill);
+    priceColumnStyle.setNumberFormat(writer.createNumFormat().asNumberFmt(2));
+
+    final CellStyle bestSoldStyle = writer.createCellStyle();
+    bestSoldStyle.setFont(bestSoldFont);
+    bestSoldStyle.setFill(emptyFill);
+
+    final RowStyle bestSoldRowStyle = new RowStyle(20, bestSoldStyle, true, true);
+    
+    //Lets create a sheet
+    writer.createNewSheet("Market place");
+    
+    //Column rules
+    writer.addColumnRule(new ColumnRule(0, 50));
+    writer.addColumnRule(new ColumnRule(1, 25));
+    writer.addColumnRule(new ColumnRule(2, 40));
+    writer.addColumnRule(new ColumnRule(3, 25, priceColumnStyle));
+    writer.addColumnRule(new ColumnRule(4, 20, priceColumnStyle));
+    
+    writer.appendRow(new Row(headerRowStyle).append("Item", headerStyle).append("Count", headerStyle)
+            .append("Last changes", headerStyle)
+            .append("Price", headerStyle));
+
+    writer.appendRow(new Row().append("Oranges").append("2 kg").append(new Date()).append(10).append("10.0"));
+    writer.appendRow(new Row().append("Apples").append("1 kg").append(new Date()).append(20).append("20.0"));
+    writer.appendRow(new Row().append("Mangos").append("50 kg.").append(new Date()).append(30).append("30.0"));
+
+    writer.appendRow(new Row(bestSoldRowStyle).append("Bananas", bestSoldStyle)
+            .append("sold out", bestSoldStyle)
+            .append(new Date(), bestSoldStyle)
+            .append(25.3).append("25.3"));
+
+    final File testFile = new File("test_base.xlsx");
+    try (FileOutputStream fout = new FileOutputStream(testFile)) {
+        writer.writeTo(fout);
+    } catch (Throwable e) {
+        e.printStackTrace();
+    }
+    Assert.assertNotEquals(testFile.length(), 0);
+
+    //cleaning up
+    testFile.delete();
+} catch (Throwable e) {
+    e.printStackTrace();
+}
+\end{lstlisting}
 \setmonofont[Mapping=tex-text]{CMU Typewriter Text}
 \bibliographystyle{ugost2008ls}
 \bibliography{diploma.bib}
