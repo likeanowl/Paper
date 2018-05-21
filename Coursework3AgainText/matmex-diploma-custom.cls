@@ -179,7 +179,7 @@
     \ifthenelse{\equal{\my@title@type@ru}{coursework}}
     {Курсовая работа}
     {\ifthenelse{\equal{\my@title@type@ru}{diploma}}
-    {Дипломная работа}
+    {Курсовая работа}
     {\ifthenelse{\equal{\my@title@type@ru}{master}}
     {Магистерская диссертация}
     {\ifthenelse{\equal{\my@title@type@ru}{bachelor}}
@@ -190,7 +190,9 @@
     \ifthenelse{\equal{\my@title@type@ru}{coursework}}
     {\normalsize \raggedleft 
     Научный руководитель:\\
-    \my@title@supervisorPosition@ru\ \my@title@supervisor@ru
+    \my@title@supervisorPosition@ru\ \my@title@supervisor@ru\sigspace
+    Консультант:\\
+    \my@title@reviewerPosition@ru\ \my@title@reviewer@ru
     }
     {\normalsize \raggedleft 
     \vskip 5em
