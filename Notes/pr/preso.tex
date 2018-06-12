@@ -1,0 +1,226 @@
+%% Простая презентация с примером включения программного кода и
+%% пошаговых спецэффектов
+\documentclass{beamer}
+\usepackage{fontspec}
+\usepackage{minted}
+\usepackage{xunicode}
+\usepackage{xltxtra}
+\usepackage{xecyr}
+\usepackage{hyperref}
+\usepackage{pgfplots}
+\setbeamertemplate{footline}[frame number]
+\setmainfont[Mapping=tex-text]{DejaVu Serif}
+\setsansfont[Mapping=tex-text]{DejaVu Sans}
+\setmonofont[Mapping=tex-text]{DejaVu Sans Mono}
+\usepackage{polyglossia}
+\setdefaultlanguage{russian}
+\usepackage{graphicx}
+
+\begin{document}
+\title{Apache Spark: что, зачем и почему?}
+\author{Сергей Свитков\\{\footnotesize\textcolor{gray}{отдел разработки ПО номер 3}}}
+\institute{НТЦ "Протей"}
+\frame{\titlepage}
+
+\begin{frame}\frametitle{Введение}
+План доклада:
+\begin{itemize}
+    \item Существующие проблемы с импортом и обработкой данных с помощью dataproc
+    \item Обзор Apache Spark
+    \item Рассуждения о том, как решить проблемы из пункта 1
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{DataProc и его минусы}
+Итак, казалось бы, всё замечательно:
+\begin{itemize}
+    \item Зачем тратить время на изучение существующих решений, если можно потратить больше времени на написание своего?
+    \item Можно сделать самый кастомный в мире механизм конфигруации
+    \item Да и вообще, спулеры, фетчеры и всё-всё-всё...
+    \item Ну и, конечно, обработка данных на уровне базы данных! (средствами процедур баз данных, очевидно)
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{DataProc и его минусы}
+Однако:
+\begin{itemize}
+    \item Один человек не может сделать продукт, по качеству и актуальности не уступающий тому, который делают 50 человек
+    \item Если подобная разработка находится строго в какой-то внутренней среде, она обречена на устаревание
+    \item Изучить существующую технологию проще, чем разобраться с тем, что есть сейчас
+    \item Гораздо больше документации и ответов на часто возникающие вопросы
+    \item При смене кого-то из кадров/срабатывании bus factor/... --- найти человека сразу же с нужными навыками невозможно
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{DataProc и его минусы: итоги}
+Что имеем:
+\begin{itemize}
+    \item Огромную кодовую базу
+    \item Малое количество документации
+    \item Абсолютно приватные знания о проекте и о том, как им пользоваться
+    \item Сложный механизм настройки
+    \item Несмотря на предыдущий пункт, отсутствие гибкости инструмента
+    \item Откровенную сложность работы
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Что же делать?}
+Варианты:
+\begin{itemize}
+    \item Провести координальный рефакторинг существующей кодовой базы, ядро выложить в open source
+    \item Реализовать аналогичный инструмент целиком с нуля
+    \item Реализовать новое решение с использованием Apache Spark
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Решение с использованием Apache Spark}
+Это позволит:
+\begin{itemize}
+    \item Унифицировать процесс импорта данных
+    \item Вынести обработку данных в код
+    \item Делать всё это многопоточно
+    \item В случае необходимости подключить к проекту нового человека --- легко обучить его
+    \item Использовать общеизвестную технологию
+    \item Как следствие --- гораздо быстрее находить ответы на свои вопросы
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Решение с использованием Apache Spark}
+Это позволит:
+\begin{itemize}
+    \item Унифицировать процесс импорта данных
+    \item Вынести обработку данных в код
+    \item Делать всё это многопоточно
+    \item В случае необходимости подключить к проекту нового человека --- легко обучить его
+    \item Использовать общеизвестную технологию
+    \item Как следствие --- гораздо быстрее находить ответы на свои вопросы
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}\frametitle{Apache Spark}
+\begin{itemize}
+    \item Фреймворк для распределенной обработки больших данных
+    \item Создан в 2012 году, первый официальный релиз в 2014
+    \item Open source, написан на Scala
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Apache Spark}
+Преимущества
+\begin{itemize}
+    \item Failure tolerance
+    \item Абстракции данных строго типизированы
+    \item Абстракции данных очень похожи на стандартные коллекции в Scala/Java
+    \item Три типа абстракций: RDD, DataSet, DataFrame, подробнее о них позже
+    \item Топология узлов master/slave
+    \item Кэширование результатов операций
+    \item Catalyst optimizer
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Apache Spark}
+Абстракции представления данных
+\begin{itemize}
+    \item RDD: 
+    \begin{itemize}
+        \item Строго типизированная коллекция
+        \item Важен порядок операций
+        \item Никак не оптимизируется автоматически
+        \item Хорошо подходят для плохо структурированных данных
+        \item Функциональное API
+        \item Самый медленный из трёх вариантов
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Apache Spark}
+Абстракции представления данных
+\begin{itemize}
+    \item DataSet: 
+    \begin{itemize}
+        \item Типизированная коллекция
+        \item Функциональное API
+        \item Частично оптимизируется автоматически
+        \item Хорошо подходит для структурированных данных
+        \item Хороший перформанс, но медленнее, чем DataFrame
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Apache Spark}
+Абстракции представления данных
+\begin{itemize}
+    \item DataFrame: 
+    \begin{itemize}
+        \item Нетипизированная коллекция
+        \item Взаимодействие осуществляется средствами Spark SQL
+        \item Полностью оптимизируется с помощью Catalyst
+        \item Подходит только для структурированных данных
+        \item Самый быстрый перформанс
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Apache Spark}
+Операции над данными
+\begin{itemize}
+    \item Transformations 
+    \begin{itemize}
+        \item lazy
+        \item map, flatMap, filter, groupBy, ...
+        \item Возвращают коллекцию
+    \end{itemize}
+    \item Actions
+    \begin{itemize}
+        \item eager
+        \item reduce, fold, agregate, ...
+        \item Возвращают значение (что-то, но не коллекцию)
+    \end{itemize}
+    \item Чтобы применить цепочку трансформаций, нужно вызвать Action
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Apache Spark}
+Почему не Hadoop?
+\begin{itemize}
+    \item Hadoop шаффлит данные после каждой операции
+    \item Persistense, т.е. запись промежуточных результатов на диск
+    \item Из-за этого --- низкая скорость работы
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Apache Spark}
+Как что-то посчитать?
+\begin{itemize}
+    \item Создать SparkJob
+    \item Есть одна master нода и много worker нод
+    \item Master нода содержит SparkContext
+    \item Worker ноды содержат SparkExecutor
+    \item Master нода создает коллекции с данными и распределяет их между worker нодами
+    \item Они коммуницируют через cluster manager
+    \item Между нодами минимизируется передача данных за счёт передачи исполяемого кода
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Итоги}
+Возможно, слишком амбициозное предложение, но всё же:
+\begin{itemize}
+    \item Использовать Apache Spark
+    \item С его помощью унифицировать процессы чтения и записи данных
+    \item Для каждого заказчика писать парсер его данных
+    \item Запускать обработку данных не на серверах заказчика, а выделить несколько наших серверов и работать на них
+    \item Это позволит сильно ускорить процесс запуска импорта данных для нового заказчика
+\end{itemize}
+\end{frame}
+
+\begin{frame}\frametitle{Материалы к докладу}
+\begin{itemize}
+    \item https://www.coursera.org/specializations/scala
+    \item https://stepik.org/course/75/syllabus
+    \item https://stepik.org/course/693/syllabus
+    \item https://github.com/likeanowl/Paper/blob/master/Notes/SparkBigData.md
+\end{itemize}
+\end{frame}
+
+\end{document}
