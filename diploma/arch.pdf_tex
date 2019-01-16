@@ -1,0 +1,127 @@
+%% Creator: Inkscape inkscape 0.92.2, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'arch.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{639bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.54107981)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{arch.pdf}}%
+    \put(0.16901408,0.20657277){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}state\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{arch.pdf}}%
+    \put(0.01643192,0.16197183){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-state : Map<String, \end{tabular}}}}%
+    \put(0.01643192,0.14553991){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}BranchInfo>\end{tabular}}}}%
+    \put(0.03521127,0.18075117){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{ChangesState}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{arch.pdf}}%
+    \put(0.01643192,0.07511737){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-name : String\end{tabular}}}}%
+    \put(0.01643192,0.05868545){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-startOffset : int\end{tabular}}}}%
+    \put(0.01643192,0.04225352){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-endOffset : int\end{tabular}}}}%
+    \put(0.01643192,0.0258216){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-changesCount : int\end{tabular}}}}%
+    \put(0.04460094,0.09389671){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{MethodInfo}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{arch.pdf}}%
+    \put(0.20774648,0.16197183){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-lastHash : String\end{tabular}}}}%
+    \put(0.20774648,0.14553991){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-infos : Map<String, \end{tabular}}}}%
+    \put(0.20774648,0.12910798){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}List<MethodInfo>>\end{tabular}}}}%
+    \put(0.24061033,0.18075117){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{BranchInfo}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{arch.pdf}}%
+    \put(0.67957746,0.50234742){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}processing\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{arch.pdf}}%
+    \put(0.76760563,0.47535211){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{MethodsExtractor}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{arch.pdf}}%
+    \put(0.49061033,0.19835681){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{RenameMethodHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{arch.pdf}}%
+    \put(0.49295775,0.1314554){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{InlineOperationHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{arch.pdf}}%
+    \put(0.49178404,0.06455399){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{MoveOperationHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{arch.pdf}}%
+    \put(0.77816901,0.26760563){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{MovedChangeHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{arch.pdf}}%
+    \put(0.77934272,0.19366197){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{AddedChangeHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=12]{arch.pdf}}%
+    \put(0.77464789,0.1314554){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{DeletedChangeHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=13]{arch.pdf}}%
+    \put(0.7758216,0.06455399){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{ModifiedChangeHadler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=14]{arch.pdf}}%
+    \put(0.46361502,0.24178404){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}+handle(refactoring : Refactoring)\end{tabular}}}}%
+    \put(0.5258216,0.27699531){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}<<Interface>>\end{tabular}}}}%
+    \put(0.50586854,0.26056338){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{RefactoringHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=15]{arch.pdf}}%
+    \put(0.76760563,0.30633803){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}+handle(change : Change)\end{tabular}}}}%
+    \put(0.80751174,0.3415493){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}<<Interface>>\end{tabular}}}}%
+    \put(0.8028169,0.32511737){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{ChangeHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=16]{arch.pdf}}%
+    \put(0.46361502,0.45657277){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}+process(commit : GitCommit)\end{tabular}}}}%
+    \put(0.46361502,0.44014085){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}+process(panel : CheckinPanel)\end{tabular}}}}%
+    \put(0.52347418,0.47535211){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{CommitUtils}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=17]{arch.pdf}}%
+    \put(0.157277,0.50234742){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}handlers\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=18]{arch.pdf}}%
+    \put(0.18661972,0.34976526){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-project : Project\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=19]{arch.pdf}}%
+    \put(0.18661972,0.3286385){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}+projectOpened()\end{tabular}}}}%
+    \put(0.19366197,0.3685446){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{ProjectOpenListener}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=20]{arch.pdf}}%
+    \put(0.01643192,0.35093897){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-project : Project\end{tabular}}}}%
+    \put(0.01643192,0.33450704){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-editor : Editor\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=21]{arch.pdf}}%
+    \put(0.01643192,0.31338028){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}+editorOpened()\end{tabular}}}}%
+    \put(0.03051643,0.36971831){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{FileOpenListener}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=22]{arch.pdf}}%
+    \put(0.01643192,0.45657277){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}-project : Project\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=23]{arch.pdf}}%
+    \put(0.01643192,0.43544601){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}+checkinSuccessful()\end{tabular}}}}%
+    \put(0.01995305,0.47535211){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}\textbf{VcsChangesHandler}\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=24]{arch.pdf}}%
+    \put(0.11267606,0.25469484){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}<<use>>\end{tabular}}}}%
+    \put(0.10093897,0.23826291){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Request State\end{tabular}}}}%
+    \put(0.24413146,0.47887324){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}<<use>>\end{tabular}}}}%
+    \put(0.22652582,0.46244131){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Process Commit\end{tabular}}}}%
+  \end{picture}%
+\endgroup%

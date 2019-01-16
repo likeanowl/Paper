@@ -1,0 +1,108 @@
+%% Creator: Inkscape inkscape 0.92.2, www.inkscape.org
+%% PDF/EPS/PS + LaTeX output extension by Johan Engelen, 2010
+%% Accompanies image file 'seq.pdf' (pdf, eps, ps)
+%%
+%% To include the image in your LaTeX document, write
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics{<filename>.pdf}
+%% To scale the image, write
+%%   \def\svgwidth{<desired width>}
+%%   \input{<filename>.pdf_tex}
+%%  instead of
+%%   \includegraphics[width=<desired width>]{<filename>.pdf}
+%%
+%% Images with a different path to the parent latex file can
+%% be accessed with the `import' package (which may need to be
+%% installed) using
+%%   \usepackage{import}
+%% in the preamble, and then including the image with
+%%   \import{<path to file>}{<filename>.pdf_tex}
+%% Alternatively, one can specify
+%%   \graphicspath{{<path to file>/}}
+%% 
+%% For more information, please see info/svg-inkscape on CTAN:
+%%   http://tug.ctan.org/tex-archive/info/svg-inkscape
+%%
+\begingroup%
+  \makeatletter%
+  \providecommand\color[2][]{%
+    \errmessage{(Inkscape) Color is used for the text in Inkscape, but the package 'color.sty' is not loaded}%
+    \renewcommand\color[2][]{}%
+  }%
+  \providecommand\transparent[1]{%
+    \errmessage{(Inkscape) Transparency is used (non-zero) for the text in Inkscape, but the package 'transparent.sty' is not loaded}%
+    \renewcommand\transparent[1]{}%
+  }%
+  \providecommand\rotatebox[2]{#2}%
+  \newcommand*\fsize{\dimexpr\f@size pt\relax}%
+  \newcommand*\lineheight[1]{\fontsize{\fsize}{#1\fsize}\selectfont}%
+  \ifx\svgwidth\undefined%
+    \setlength{\unitlength}{557.25bp}%
+    \ifx\svgscale\undefined%
+      \relax%
+    \else%
+      \setlength{\unitlength}{\unitlength * \real{\svgscale}}%
+    \fi%
+  \else%
+    \setlength{\unitlength}{\svgwidth}%
+  \fi%
+  \global\let\svgwidth\undefined%
+  \global\let\svgscale\undefined%
+  \makeatother%
+  \begin{picture}(1,0.62853297)%
+    \lineheight{1}%
+    \setlength\tabcolsep{0pt}%
+    \put(0,0){\includegraphics[width=\unitlength,page=1]{seq.pdf}}%
+    \put(0.90982503,0.61103634){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Methods\end{tabular}}}}%
+    \put(0.90713324,0.59219381){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Extractor\end{tabular}}}}%
+    \put(0.02557201,0.61103634){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Intellij\end{tabular}}}}%
+    \put(0.03095559,0.59219381){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}IDEA\end{tabular}}}}%
+    \put(0.2960969,0.61103634){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Changes\end{tabular}}}}%
+    \put(0.30820996,0.59219381){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}State\end{tabular}}}}%
+    \put(0.77523553,0.61103634){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Change\end{tabular}}}}%
+    \put(0.77388964,0.59219381){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Handler\end{tabular}}}}%
+    \put(0.6218035,0.61103634){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Refactoring\end{tabular}}}}%
+    \put(0.63526245,0.59219381){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Handler\end{tabular}}}}%
+    \put(0.44683715,0.61103634){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Commit\end{tabular}}}}%
+    \put(0.4602961,0.59219381){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Utils\end{tabular}}}}%
+    \put(0.1615074,0.61103634){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Project\end{tabular}}}}%
+    \put(0.13862719,0.59219381){\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}OpenListener\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=2]{seq.pdf}}%
+    \put(0.08748318,0.07402423){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}12: Show\end{tabular}}}}%
+    \put(0.07133244,0.0551817){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}data in Editor\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=3]{seq.pdf}}%
+    \put(0.50740242,0.28129206){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}8: Return state\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=4]{seq.pdf}}%
+    \put(0.50605653,0.31897712){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}7: Request state\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=5]{seq.pdf}}%
+    \put(0.84118439,0.39434724){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}6: Send\end{tabular}}}}%
+    \put(0.83310902,0.37550471){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Revisions\end{tabular}}}}%
+    \put(0.83983849,0.35666218){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}content\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=6]{seq.pdf}}%
+    \put(0.07267833,0.17631225){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}11: Request\end{tabular}}}}%
+    \put(0.10094213,0.15746972){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}data\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=7]{seq.pdf}}%
+    \put(0.36877524,0.23418573){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}10: Send\end{tabular}}}}%
+    \put(0.36473755,0.2153432){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Collection\end{tabular}}}}%
+    \put(0.34724092,0.19650067){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}<MethodInfo>\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=8]{seq.pdf}}%
+    \put(0.08479139,0.56258412){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}1: Open\end{tabular}}}}%
+    \put(0.08882907,0.54374159){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}project\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=9]{seq.pdf}}%
+    \put(0.51547779,0.243607){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}9: Collection\end{tabular}}}}%
+    \put(0.50740242,0.22476447){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}<MethodInfo>\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=10]{seq.pdf}}%
+    \put(0.54239569,0.46702557){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}4: Send\end{tabular}}}}%
+    \put(0.53297443,0.44818304){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}Collection\end{tabular}}}}%
+    \put(0.49663526,0.42934051){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}<RefactoringData>\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=11]{seq.pdf}}%
+    \put(0.50740242,0.36204576){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}5: Send Change\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=12]{seq.pdf}}%
+    \put(0.5397039,0.52355316){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}3: Send\end{tabular}}}}%
+    \put(0.51951548,0.50471063){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}commit hash\end{tabular}}}}%
+    \put(0,0){\includegraphics[width=\unitlength,page=13]{seq.pdf}}%
+    \put(0.23687752,0.53432032){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}2: Send\end{tabular}}}}%
+    \put(0.22476447,0.51547779){\color[rgb]{0,0,0}\makebox(0,0)[lt]{\lineheight{1.25}\smash{\begin{tabular}[t]{l}GitCommit\end{tabular}}}}%
+  \end{picture}%
+\endgroup%
