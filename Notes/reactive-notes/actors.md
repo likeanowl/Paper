@@ -109,3 +109,125 @@ trait ActorContext {
 }
 ```
 Actors are created by actors. `stop` is often applied to `self`. 
+
+### Messages processing semantics
+#### ActorRef
+The most important property of actors is that access to their state is only possible by excanging messages. There's no way to directly access current behavior of actor. Only messages can be sent to known addresses (`ActorRef`). Every actor knows its own address and its useful when sending messages to other actors and telling them where to reply.
+`ActorRef` could be obtained by following ways:
+ - `self`
+ - creating an actor returns its address
+ - addresses can be sent within messages (e.g. sender)
+
+Actors are completely independent agents of computation:
+ - local execution, no global synchronization
+ - all actors run fully concurrently
+ - message-passing primitive is one-way communication
+
+On the inside, actors are effectively single-threaded:
+ - messages are received sequientially
+ - behavior change is effective before processing the next message
+ - processing on message is the atomic unit of execution
+
+This allows to obtain benefits of synchronized methods, but withoud blocking. Blocking is replaced by enqueueing a message for later execution.
+
+#### Bank account example
+It is a good practice to define an actor messages in its companion object
+```scala
+object BankAccount {
+    case class Deposit(amount: BigInt) {
+        require(amount > 0)
+    }
+    case class Withdraw(amount: BigInt) {
+        require(amount > 0)
+    }
+    case object Done
+    case object Failed
+}
+
+class BankAccount extends Actor {
+    import BankAccount._
+
+    var balance = BigInt(0)
+
+    def receive = {
+        case Deposit(amount) => balance += amount
+            sender ! Done
+        case Withdraw(amount) if amount <= balance => balance -= amount
+            sender ! Done
+        case _ => sender ! Failed
+    }
+}
+```
+We would not face any issues like race-condition or deadlock, because all operations inside the actor are synchronized. 
+Lets see transferring actors:
+```scala
+object WireTransfer {
+    case class Transfer(from: ActorRef, to: ActorRef, amount: BigInt)
+    case object Done
+    case object Failed
+}
+
+class WireTransfer extends Actor {
+    import WireTransfer._
+
+    def receive = {
+        case Transfer(from, to, amount) =>
+            from ! BankAccount.Withdraw(amount)
+            context.become(awaitWithdraws(to, amount, sender))
+    }
+
+    def awaitWithdraw(to: ActorRef, amount: BigInt, client: ActorRef): receive = {
+        case BankAccount.Done =>
+            to ! BankAccount.Deposit(amount)
+            context.become(awaitDeposit(client))
+        case BankAccount.Failed =>
+            client ! Failed
+            context.stop(self)
+    }
+
+    def awaitDeposit(client: ActorRef): Receive = {
+        case BankAccount.Done =>
+            client ! Done
+            context.stop(self)
+    }
+}
+```
+
+#### Message Delivery Guarantees
+
+Akka provides only `at most one` delivery guarantee, because communication is inherently unreliable.  Delivery of a message requires eventual availability of channel & recipient.
+Types of guarantees:
+ - `at-most-once`: sending once delivers [0, 1] times
+ - `at-least-once`: resending until acknowledged delivers [1, inf) times
+ - `exactly-once`: processing only first reception delivers 1 time
+
+ First option can be done without keeping any state in sender or receiver, the second choice requires that the sender need to keep the message to buffer it, in order to be able to resend. And the third choice additionally requires the receiver to keep track of which messages have already been processed. 
+
+ #### Reliable messaging
+ Messages support reliability:
+ - all messages can be persisted
+ - can include unique correlation IDs
+ - delivery can be retried until successful
+
+ Making messages explicitly supports reliability quite well. Messages can be persistent, i.e. stored in some persistent storage. Such thing could not be done with local method invocation because context may go away. And on the other hand a message frome one sender to one receiver is something that can be persisted. 
+
+ If a unique relation ID is included in the message, you can enable the exactly once semantics by allowing the recipient to find out whether it has already received this unique message.
+
+ And finally if the messages were persisted then retries can even be restared after a catastrophic failure. 
+
+ An important thing to note is that it is not enough to deliver a message to a recipien bc if you do not get a reply from that recipient you can never be sure whether it has processed it. Therefore, all of these semantics discussed only work if ensured by business-level acknowledgement. 
+
+ Back to our example, making the transfer reliable requires:
+ - log activities of WireTransfer to persistent storage
+ - each transfer has a unique ID
+ - add ID to withdraw and deposit
+ - store IDs of completed actions within BankAccount
+
+ #### Message order
+ Akka guarantees that if an actor sends multiple messages to the same destination they will not arrive out of order.
+
+ #### Summary
+ - Actors are fully encapsulated independent agents of computation
+ - Messages are the only way to interact with actors
+ - Explicit messageing allows explicit treatment of reliability
+ - The order in which messages are processed is mostly undefined
