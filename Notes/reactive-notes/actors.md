@@ -231,3 +231,14 @@ Types of guarantees:
  - Messages are the only way to interact with actors
  - Explicit messageing allows explicit treatment of reliability
  - The order in which messages are processed is mostly undefined
+
+ ### Designing actor systems
+
+ When starting to design an actor system its often useful to imagine giving the task to a group of people, dividing it up. You must consider the group to be of very large size. 
+ You should start with designing how people with different tasks will talk with each other. Consider these people to be easily replaceable.
+ Drawing a diagram also helpful, draw how the task will split up, including communication lines. 
+
+ #### Example: web crawler
+ Write an actor system which given a URL will recursively download the content, extract links and follow them, bounded by a maximum depth; all links encountered shall be returned. 
+ There will be a `Receptionist` actor, which will be responsible for accepting some links.
+ `Controller` actor will 
