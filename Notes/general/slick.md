@@ -7,7 +7,7 @@ Main points:
 - Typesafe queries
 - Interacts with DB only when required
 
-Despite using objects, it is not ORM. Slick allows to execute SQL requests explicitly. Slick supports different relational DBs.
+Despite using objects, it is not ORM. Slick allows to execute SQL queries explicitly. Slick supports different relational DBs.
 
 
 #### Addition to project
