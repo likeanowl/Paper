@@ -242,8 +242,26 @@ Types of guarantees:
  Write an actor system which given a URL will recursively download the content, extract links and follow them, bounded by a maximum depth; all links encountered shall be returned. 
  There will be a `Receptionist` actor, which will be responsible for accepting some links.
 
-#### @todo finish this lecture
+#### Design summary
+- A reactive application should be non-blocking and event-driven top to bottom.
+- Actors are run by a dispatcher - potentially shared - which can also run Futures
+- Prefer immutable data structures, since they can be shared
+- Prefer context.become for different states, with data local to the behavior
+- Do not refer to actor state from code running asynchronously
 
+#### Actor-Based logging
+- Logging includes IO which can block indefinitely
+- Akka's logging passes that task to dedicated actors
+- supports ActorSystem-wide levels of debug, info, warning, error
+- set level using setting akka.loglevel=DEBUG
+
+```scala
+class A extends Actor with ActorLogging {
+    def receive = {
+        case msg => log.debug("some logs")
+    }
+}
+```
 
 #### Ask pattern
 
@@ -314,3 +332,4 @@ Actor path:
 3. Address
 e.g. `akka.tcp://sys@host:2552/user/parent/child`
 
+### Actors system testing
