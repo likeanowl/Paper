@@ -241,8 +241,65 @@ Types of guarantees:
  #### Example: web crawler
  Write an actor system which given a URL will recursively download the content, extract links and follow them, bounded by a maximum depth; all links encountered shall be returned. 
  There will be a `Receptionist` actor, which will be responsible for accepting some links.
- `Controller` actor will 
+
+#### @todo finish this lecture
 
 
+#### Ask pattern
 
- 
+Actor can wait for a message. It is called 'ask' and return `Future` of response. 
+#### PipeTo
+
+Do not ever share mutable state of Actor! Imagine we have service actor.
+```scala
+object Service {
+    sealed trait Message
+    case object Get extends Message
+    case class Result(value: String)
+}
+import Service._
+
+class Service extends Actor {
+    def asyncAction(): Future[Result] = {
+        import akka.pattern.after
+        after(100.millis, system.scheduler)(Future.successful(Result("res")))
+    }
+
+    def receive: Receive = {
+        case Get =>
+            asyncAction().foreach(res => sender() ! res)
+    }
+}
+
+val service = system.actorOf(Props(new Service), "service")
+
+val result = (service ? Get).mapTo[Result]
+
+```
+It has a `Get` method and should return some result. We don't want to process result as `Any` and therefore using `mapTo` pattern. `mapTo` simply casts value to type and therefore it is not type-safe (you could get classcast exc in Future) but this is usable (if you do not have akka-typed)
+In order to obtain result, actor must perform async action. It maps callback on future and when result is ready we send it to sender. We do not guarantee result obtaining time. 
+If we run the code above, we will see that our message from service was not delivered and was found in dead letters. This happened because of
+```scala
+case Get =>
+    asyncAction().foreach(res => sender ! res)
+```
+This lamda expression performs closure. And we can enclosure only local variables (method params are local vars too), but here we enclosuring `this`, a first implicit method argument. Therefore, we invoking a `this.sender` when we already left `receive` and `sender` is not valid. 
+This could be fixed easily:
+```scala
+case Get =>
+    val replyTo = sender()
+    asyncAction().foreach(res => replyTo ! res)
+```
+We call sender explicitly here, while it still valid. `sender` is a mutable state of Actor and we shared a mutable state of actor to other thread (`foreach` in this case). Any closure could possibly share actor's local state.
+This approach is cool, but we don't want to always write as this. We have a pattern `pipeTo` in order to deal with this. 
+```scala
+case Get => 
+    import akka.pattern.pipe
+    asyncAction().pipeTo(sender())
+```
+
+Why this works? Because `pipeTo` obtains value not `by name` and `sender` is evaluated right in place.
+So, if we want to pass `Future` to some actor, use `pipeTo` for this. 
+
+
+#### Actor hierarchy, supervision and monitoring
