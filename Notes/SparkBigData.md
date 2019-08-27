@@ -3,9 +3,9 @@ Data parallel to distributed parallel
 shared memory case - one node. Some dataset on one computer.
 
 Shared memory data parallelism:
-		- split the data
-		- threads independently operate on the data shards in parallel
-		- combine when done
+ - split the data
+ - threads independently operate on the data shards in parallel
+ - combine when done
 
  scala parallel collections is a collections abstraction over shared memory and a parallel execution
 
@@ -16,21 +16,21 @@ Shared memory data parallelism:
  we should worry about latency between nodes
 
  difference:
- 	- shared memory: data parallel programming model, data partitioned in memory and operated upon in parallelism
-	- distributed: data parallel programming mode. datta partitioned between machines, network in between, operated upon in parallel.
+ - shared memory: data parallel programming model, data partitioned in memory and operated upon in parallelism
+ - distributed: data parallel programming mode. datta partitioned between machines, network in between, operated upon in parallel.
 
 spark implements a distributed data parallel model called resilient distributed datasets
 
 we chunk big data somehow, distribute it over cluster machines and run like it is usual collection
 
 
-# latency
+### latency
 data parallelism in a distributed setting
 distributed collections abstraction from apache spark as an implementation of this paradigm
 when distributed, we should worry about:
-	- partial failure: crash failures of a subset of the machines involved in a distributed computation
-	- latency: certain operations have a much higher latency than other operations due to network communication
-	- latency connot be masked completely; it will be an important aspect that also impacts the programming model
+- partial failure: crash failures of a subset of the machines involved in a distributed computation
+- latency: certain operations have a much higher latency than other operations due to network communication
+- latency connot be masked completely; it will be an important aspect that also impacts the programming model
 
 important latency numbers:
  //insert picture
@@ -41,51 +41,50 @@ network: slowest
 
 Hadoop: batch data processing framework, opensource implementation of google's mapreduce
 
-mapreduce: simple map and mapreduce
-			fault tolerance, allows to scale easily from 100 to 1000 nodes. it is important, because node failing is very high.
-			So ability to recover from node failure allow:
-				- computations on unthinkably large data sets to succeed to completion
+mapreduce: simple map and mapreduce fault tolerance, allows to scale easily from 100 to 1000 nodes. it is important, because node failing is very high.
+So ability to recover from node failure allow:
+- computations on unthinkably large data sets to succeed to completion
 
 
 why not just hadoop, but spark?:
-	- between each step hadoop shuffles datta and write intermediate data to disk, in order to recover from potential failures
-	- spark uses different strategy for handling latency and retains fault-tolerance
-	- spark main idea to handle latency is: keep all data immutable and in-memory. all operations on data are just functional transformations like regular scala collections. fault tolerance is achieved by reading data somewhere else and replaying functional transformations over original dataset.
-	- as a result spark has shown to be 100x more performant than hadoop, while adding even more expressive APIs
-	- hadoop operations involve disk and network operations
-	- spark operations involve memory and network operations, more operations in memory. it agrresively minimizes its network traffic.
-	- spark brings real productivity
+- between each step hadoop shuffles datta and write intermediate data to disk, in order to recover from potential failures
+- spark uses different strategy for handling latency and retains fault-tolerance
+- spark main idea to handle latency is: keep all data immutable and in-memory. all operations on data are just functional transformations like regular scala collections. fault tolerance is achieved by reading data somewhere else and replaying functional transformations over original dataset.
+- as a result spark has shown to be 100x more performant than hadoop, while adding even more expressive APIs
+- hadoop operations involve disk and network operations
+- spark operations involve memory and network operations, more operations in memory. it agrresively minimizes its network traffic.
+- spark brings real productivity
 
-# Spark RDDs
+## Spark RDDs
 RDDs are a lot like immutable sequential or parallel scala collections, like a List.
 RDD API:
-	- map
-	- flatmap
-	- filter
-	- reduce
+- map
+- flatmap
+- filter
+- reduce
 
 most operations on rdds are higher-order functions. they take a function as an argument and typically return RDD
 
 Combinators on RDDs:
-	- map
-	- flatmap
-	- filter
-	- reduce
-	- fold
-	- agregate
+- map
+- flatmap
+- filter
+- reduce
+- fold
+- agregate
 
 RDDs can be created in two ways:
-	- transforming an existing RDD:
-		- like a call to map on a list.
-	- from a SparkContext or SparkSession object:
-		- can be thought of as handle to spark cluster. It represents the connection betweeen the spark cluster and running application. It defines a handful of methods which can be used to create and populate a new RDD.
-			- parallelize: convert a local Scala collection to an RDD
-			- textFile: read a text file from HDFS or a local file system and return an RDD of  string. Mostly used in real world tasks.
+- transforming an existing RDD:
+	- like a call to map on a list.
+- from a SparkContext or SparkSession object:
+	- can be thought of as handle to spark cluster. It represents the connection betweeen the spark cluster and running application. It defines a handful of methods which can be used to create and populate a new RDD.
+	- parallelize: convert a local Scala collection to an RDD
+	- textFile: read a text file from HDFS or a local file system and return an RDD of  string. Mostly used in real world tasks.
 
 
  RDDs transformations and actions
-	- Transformers: return new collections as results (not single values). eg map, filter, flatmap, groupby
-	- Accessors: return single values as results (not collections.) eg reduce, fold, agregate.
+- Transformers: return new collections as results (not single values). eg map, filter, flatmap, groupby
+- Accessors: return single values as results (not collections.) eg reduce, fold, agregate.
 
 So Spark defines transformations and actions on rdds.
 Transformations return new rdds as results. they are lazy, their result rdd is not immediately computed
@@ -100,44 +99,48 @@ common actions: collect, count, take, reduce, foreach. they are eager.
 collect usually used when some operations to reduce dataset are done, it returns all elements of rdd.
 
 benefits of laziness: spark computes rdds the first time they are used in an action. this helps when processing large amounts of data.
-eg firstLogsWithErrors = lastYearsLogs.filter(_contains("ERROR")).take(10)
+eg `firstLogsWithErrors = lastYearsLogs.filter(_contains("ERROR")).take(10)`
 The execution of filter is deferred until the take action is applied. Spark leverages this by analyzing and optimizing the chain of operations before executing it. Spark will not compute intermediate RDDS, instead, it will stop as soon as 10 elements of filtered RDD have been computed. At this point spark stops working.
 
 Why spark is unlike scala collections?
-	why spark is good for datascience:
-	iteration in hadoop:
-		- file system read
-		- iter 1
-		- file system write
-		- file system read
-		- iter 2
-		- file system write
-		- ...
+why spark is good for datascience:
+- iteration in hadoop:
+	- file system read
+	- iter 1
+	- file system write
+	- file system read
+	- iter 2
+	- file system write
+	- ...
+
 spark can avoid 90% hadoops io
-	iter in spark:
-		- input
-		- iter 1
-		- iter 2
-		- ...
+- iter in spark:
+	- input
+	- iter 1
+	- iter 2
+	- ...
 
 iterative algorithms
 	by default RDDs are recomputed each time you run an action on them. this can be expensive if you need to use a dataset more then once. Spark allows you to control what is cached in memory. To cache an RDD in spark simply call persist() or cache() on it.
 There are many ways to configure how your data is persisted.
 possible to persist data set:
-	- in memory as regular java objects
-	- on disk as regular java objects
-	- in memory as serialized java objects
-	- on disk as serialized java objects
-	- both in memory and on disk.
+- in memory as regular java objects
+- on disk as regular java objects
+- in memory as serialized java objects
+- on disk as serialized java objects
+- both in memory and on disk.
+
 cache: shorthand for using the default storage level wich is in memory only as regular java objects.
+
 persist: persistence can be customized with this method. pass the storage level youd like as a parameter to persist.
 
 //picture of storage levels
 
 Despite similar-looking api to scala collections the deferred semantics of spark rdds are very unlike scala collections.
 due to:
-	- the lazy semantics of rdd transformation operations
-	- users implicit reflex to assume collections are eagerly evaluated
+- the lazy semantics of rdd transformation operations
+- users implicit reflex to assume collections are eagerly evaluated
+
 one of the most common performance bottlenecks of newcomers to spark arises from unknowingly re-evaluating several transformations when caching could be used.
 
 #cluster topology matters!
@@ -148,13 +151,13 @@ how they communicate:
 	they communicate via a cluster manager. it allocates resourcess across cluster, manages scheduling, eg YARN/Mesos.
 a spark application is a set of processes running on a cluster. all these processes are coordinated by the driver program.
 The driver is:
-	- the process where the main() method of your program runs
-	- the process running the code that creates a sparkcontext, creates rdds and stages up or sends off transformations and actions.
+- the process where the main() method of your program runs
+- the process running the code that creates a sparkcontext, creates rdds and stages up or sends off transformations and actions.
 
 these processes that run computations and store data for your application are executors. Executors:
-	- run the tasks that represent the application
-	- return computed results to the driver
-	- provide in-memory storage for cached rdds.
+- run the tasks that represent the application
+- return computed results to the driver
+- provide in-memory storage for cached rdds.
 
 
 Execution of a sprk program:
@@ -164,7 +167,7 @@ Execution of a sprk program:
 - next driver program sends your app code to the Executors
 - finally sparkcontext sends tasks for the executors to run.
 
-THE MORAL:
+Summary:
 To make effective use of rdds uou have to understand a little bit about how spark works under the hood.
 
 
@@ -203,9 +206,9 @@ In spark distributed k-v pairs are "Pair RDDs"
 Useful because: Pair RDDs allow you to act on each key in parallel or regroup data across the network.
 Whe an RDD is created with a pair as its element type, Spark automatically adds a number of extra useful additional methods for such pairs.
 Some of the most important extension methods for RDDS containing pairs are:
-	- group by key
-	- reducreByKey
-	- join
+- group by key
+- reducreByKey
+- join
 
 Creating a pair rdd:
 Pair rdds are most often created from already-existing non-pair RDDs, for example, by using the map operation on RDDs:
@@ -217,15 +220,15 @@ Once created, you can now use transformations specific to key-value pairs such a
 ## Transformations and Actions on pair RDDs.
 Two categories again: transformations and actions.
 some important operations on pair rdd (but not avaliable on regular rdds):
-	- Transformations:
-		- groupByKey
-		- reduceByKey
-		- mapValues
-		- keys
-		- join
-		- leftOuterJoin/rightOuterJoin
-	- Actions:
-		- countByKey
+- Transformations:
+	- groupByKey
+	- reduceByKey
+	- mapValues
+	- keys
+	- join
+	- leftOuterJoin/rightOuterJoin
+- Actions:
+	- countByKey
 
 groupBy: breaks up a collection into two or more collections according to a function that you pass to it. Result of the function is the key, the collection of results that return key when the function is applied to it. Retuns a Map mapping computed keys to collections of corresponding values.
 
@@ -243,8 +246,8 @@ keys: return an RDD with the keys of each tuple. This method is a transformation
 ##Joins:
 Joins are another sort of transformation on Pair RDDs. They're used to combine multiple datasets. They are one of the most commonly-used operations on Pair RDDs!
 There are two kinds of joins:
-	- Inner Joins (join)
-	- Outer joins (leftOuterJoin/rightOuterJoin)
+- Inner Joins (join)
+- Outer joins (leftOuterJoin/rightOuterJoin)
 
 The key difference between the two is what happens to the keys when both RDDs don't contain the same key.
 

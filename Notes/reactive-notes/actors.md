@@ -303,3 +303,14 @@ So, if we want to pass `Future` to some actor, use `pipeTo` for this.
 
 
 #### Actor hierarchy, supervision and monitoring
+Each actor has a parent. `root` actor is a parent of all actors.
+`user` actor is a parent for all actors created by users.
+`system` is a parent actor for system actors.
+Why separation for `user` and `system` is needed? Because of logging. When all user defined actors have finished their jobs, logging of system must continue. 
+
+Actor path:
+1. Protocol
+2. System name
+3. Address
+e.g. `akka.tcp://sys@host:2552/user/parent/child`
+
