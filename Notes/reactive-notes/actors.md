@@ -333,3 +333,47 @@ Actor path:
 e.g. `akka.tcp://sys@host:2552/user/parent/child`
 
 ### Actors system testing
+Actor test can only verify externally observable effects.
+Let's test simple actor:
+```scala
+class Toggle extends Actor {
+    def happy: Receive = {
+        case "How are you?" =>
+            sender ! "happy"
+            context become sad
+    }
+    def sad: Receive = {
+        case "How are you?" =>
+            sender ! "sad"
+            context become happy
+    }
+    def receive = happy
+}
+```
+TestProbe as remote-controlled actor:
+
+```scala
+implicit val syste = ActorSystem("TestSys")
+val toggle = system.actorOf(Props[Toggle])
+val p = TestProbe()
+p.send(toggle, "How are you?")
+p.expectMsg("happy")
+p.send(toggle, "How are you?")
+p.expectMsg("sad")
+p.send(toggle, "unknown")
+p.expectNoMsg(1.second)
+system.shutdown()
+```
+
+Running a test within a TestProbe:
+```scala
+new TestKit(ActorSystem("TestSys")) with ImplicitSender {
+    val toggle = system.actorOf(Props[Toggle])
+    toggle ! "how are you" // <- sent from testActor
+    ...
+}
+```
+
+#### Testing actors with dependencies
+Accessing the read DB or prod web services is not desirable:
+ - one simple solution is to add overridable factory methods
