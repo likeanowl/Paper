@@ -193,3 +193,24 @@ trait Actor {
     }
 }
 ```
+### Persistent actor state
+Actors representing a stateful resource. In order to recover from, for example, the power outage, we need to somehow save it on hard drive. If we do so, we can then read the last persissted state and start from there.
+Same applies for restart.
+Two possibilities for persisting state:
+- in-place updates, so when the actor's state changes, the persistent location is also updated. Persistent location could be files, in the file system, or e.g. records in db
+- persist changes in append-only fashion, which means persisting not the state itself, but it's changes. it's called `append-only`, bc records never will be deleted, only added. Then, if state is requested, the changes could be applied sequentially. 
+
+#### Changes vs State persistence 
+Benefits of persisting current state:
+- Recovery of latest state in constant time
+- Data volume depends on number of records, not their change rate
+
+Benefits of persisting changes:
+- History can be replayed, audited, scored, etc...
+- Some processing errors can be corrected retroactively
+- Additional insight can be gained on business processes
+- Writing an append-only stream optimizes IO bandwidth
+- Changes are immutable and can be freely replicated
+
+#### Snapshots
+Immutable snapshots that can be used to bound recovery time. 
