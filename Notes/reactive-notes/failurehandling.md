@@ -214,3 +214,19 @@ Benefits of persisting changes:
 
 #### Snapshots
 Immutable snapshots that can be used to bound recovery time. 
+
+#### Command-sourcing
+Command-Sourcing means that we make sure that the actor does not lose any commands. Since it persists them before they arrive. So in front of the actor, or in front and to the side we place a log. And a command which comes in is diverted via the log and goes then to the actor. That means that all messages which are received by the actor have already been persisted.
+
+
+During recovery:
+- all commands are replayed to recover state
+- a persistent Channel discards messages already sent to other actors
+
+But an actor does not only change its own behavior, it also sends messages to other actors.During a replay all of those messages would of course be sent again.
+
+#### Event-sourcing
+Event-sourcing: generate change requests ("events") instead of modifying local state; persist and apply them. The focus here does not lie on replaying the commands which generated this state. Instead while processing commands, events are emitted, which describe the state changes which are supposed to happen.
+
+#### Stash
+//@todo finish
