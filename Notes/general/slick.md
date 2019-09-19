@@ -44,15 +44,14 @@ object FstExample {
     def main(args: Array[String]): Unit = {
         // ---
         // Creating connection
-        val db = Database.forConfig("dbProperties)
+        val db = Database.forConfig("dbProperties")
         // Query entites
         // Until wrapped in action, it is just a query
         val messages = TableQuery[MessageTable]
 
         val setupAction = DBIO.seq( //actions
             messages.schema.create, //create table
-            messages += (OL, "test) // insert record
-        )
+            messages += (OL, "test")) // insert record
         // ---
         // This whole section does not init any SQL queries
         try {
@@ -98,7 +97,7 @@ object FstExample {
             (text, id) <> (Message.tupled, Message.unapply)
     }
 
-    private lazy val db = Database.forConfig("dbProperties)
+    private lazy val db = Database.forConfig("dbProperties")
 
     def execute[T] (action: DBIO[T]): T = Await.result(db.run(action), Duration.Inf)
 
@@ -161,7 +160,7 @@ object Example {
     case class User(id: Long, name: String)
     case class Message(text: String ,senderId: Long, id: Long = 0L)
     class UserTable(tag: Tag) extends Table[User](tag, "user") {
-        def id: Rep[Long] = column[Long]("id, O.PrimaryKey)
+        def id: Rep[Long] = column[Long]("id", O.PrimaryKey)
         def name: Rep[String] = column[String]("name")
 
         override def * : ProvenShape[User] = (id, name).mapTo[User]
