@@ -228,5 +228,67 @@ But an actor does not only change its own behavior, it also sends messages to ot
 #### Event-sourcing
 Event-sourcing: generate change requests ("events") instead of modifying local state; persist and apply them. The focus here does not lie on replaying the commands which generated this state. Instead while processing commands, events are emitted, which describe the state changes which are supposed to happen.
 
+Event example:
+Suppose we want to write an actor which proccesses blog posts. A user can send in new blog posts, but there is also a limit beyond which posts are accepted. The state transitions of this actor can be modeled by having two events: PostCreated and QuotaReached. PostCreated contains the new text of the post and QuotaReached signals that this user has reached his or her limit for example for today to post new entries. The state of the actor is encapsulated in State case class and it knows how to update itself so how to produce the next state when an event comes in. The creation post and disabling is separate opperations therefore it is good idea to keep them distinct.
+```scala
+sealed trait Event
+case class PostCreated(text: String) extends Event
+case object QuotaReached extends Event
+
+case class State(posts: Vector[String, disabled: Boolean]) {
+    def updated(e: Event): State = e match {
+        case PostCreated(text) => copy(posts = posts:+ text)
+        case QuotaReached => copy(disabled = true)
+    }
+}
+
+class UserProcessor extends Actor {
+    var state = State(Vector.empty, false)
+    def receive = {
+        case NewPost(text) => if (!state.disabled) emit(PostCreated(text), QuotaReached)
+        case e: Event => state = state.updated(e)
+    }
+    def emit(events: Event*) = ... //send events to log
+}
+```
+##### When to apply events?
+- Applying after persisting leaves actor in stale state
+- Applying before persisting relies on regenerating during replay
+The disadvantage of the second approach is that in case of a crash of the whole system, the processor might not reach the last known state because the states reached here are not guaranteed to be persisted. With the first approach, all states which the processor was in have already been persisted so it can be a recreated just as it was at that time. 
+
+In order to avoid these troubles, you could choose the third way: do not process new messages while waiting for the perstistence. When a new command comes in while outstanding events have not yet been persisted, then the actor must simply not respond to it right away. It must keep it buffered until the events come back from the persistent store. This will give lower performance, but it will be more consistent. The ability to postpone messages is provided by the `Stash` trait in Akka. 
 #### Stash
-//@todo finish
+Example: 
+```scala
+class UserProcessor extends Actor with Stash {
+    var state: State = ...
+    def receive = {
+        case NewPost(text) if !state.disabled => 
+            emit(PostCreated(text), QuotaReached)
+            context.become(waiting(2), discardOld = false)
+    }
+
+    def waiting(n: Int): Receive = {
+        case e: Event => 
+            state = state.updated(e)
+            if (n == 1) { context.unbecome; unstashAll}
+            else context.become(waiting(n - 1))
+        case _ => stash()
+    }
+}
+```
+
+This actor does the same thing as the last example shown but when it gets a new post and was not disabled and it has emitted the events, it changes its behavior. It becomes waiting for the two events to be persisted using the stacking feature of the behavior stack of Akka actors by discardOld set to false. When persistence is ended we pop the behavior off the stack and allow all messages which came in the meantime to be reprocessed. They were stored in an internal stash and the way they get in there is in this default case. Anything which is not an event is stashed away. When messages come back from the stash they are pre-pended to mailbox instead of usual appending
+
+#### When to perform external effects?
+Performing the effect and persisting that is was done cannot be atomic.
+- Perform it before persisting for at-least-once semantics
+- Perform it after persisting for at-most-once semantics
+
+This choice needs to be made based on the underlying business model.
+
+#### Summary
+- Actors can persist incoming messages or generated events
+- Events can be replicated and used to inform other components
+- Recovery replays past commands or events, snapshots reduce this cost
+- Actors can defer handling certain messages by using the Stash trait
