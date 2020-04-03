@@ -457,3 +457,137 @@ The most fundamental pattern is request-reply. It is so common that in Akka the 
 ![customer pattern](./resources/customer_pattern.png)
 
 Let us say that Alice wants to know something of Bob, and sends a message. Together with the sender information, this enables Bob to reply. But we have seen other uses, for example Bob could forward the message to Charlie for example. So it's basically this. And forwarding means that the sender reference stays the same. So the sender of that message here, will not be Bob, it will be Alice. And then the reply from Charlie, goes directly back to Alice. This means the fact that simply putting the sender reference in the message and letting it travel with it allows dynamic composition of actors. Bob can decide dynamically whom shall handle the request. Then the reply will go back to the one requesting it.
+
+##### Interceptors
+
+```scala
+class AuditTrail(target: ActorRef) extends Actor with ActorLogging {
+    def receive = {
+        case msg => 
+            log.info("sent {} to {}", msg, target)
+            target forward msg
+    }
+}
+```
+Just a one-way proxy that does not keep state.
+
+##### Ask pattern
+Another useful pattern is the one where you expect exactly one reply. You ask a question, you get one reply.
+
+```scala
+import akk.pattern.ask
+
+class PostsByEmail(userService: ActorRef) extends Actor {
+    implicit val timeout = Timeout(3.seconds)
+    def receive = {
+        case Get(email) =>
+            (userService ? FindByEmail(email)).mapTo[UserInfo]
+              .map(info => Result(info.posts.filter(_.email == email)))
+              .recover {case ex => Failure(ex)}
+              .pipeTo(sender)
+    }
+}
+```
+
+It returns `Future[Any]` but with the use of `.mapTo` we can get the required type. 
+**What could go wrong?**
+We have this ask operation. We have seen that actors only can send messages to `ActorRef`. And there is not really an explicit `ActorRef` to reply to in this case. What the ask operator does is, it creates a little, very small tiny light weight **pseudo actor**, which just is an actor if linked to a promise.
+
+This actor of course has a name and everything, it needs to be registered. So it also needs to be garbage collected when it is no longer needed. Unfortunately, that is not very easy to determine, because actors are also location transparent. 
+
+So for example, UserService might be on a remote system, and we do not know when or if it will reply. For this reason, the ask operation takes an implicit time out, which we have set to three seconds here. After these three seconds, the future will be completed with an ask timeout exception. And this little pseudo actor will be stopped.
+
+Also a `ClassCastExc` could occur when using `mapTo` and also any failures in `map` will end in `recover` and will be sent as a `Failure`. 
+
+As an alternative we can spawn an `Actor` manually. The `ask` pattern is just an optimized form of this. Or just include the ActorRef of original sender in a message which travels to the `UserService` and back.
+
+Another use case where the ask pattern comes in handy is if you need to aggregate results from multiple other actors.
+
+```scala
+class PostSummary( ... ) extends Actor {
+    implicit val timeout = Timeour(500.millis)
+    def receive = {
+        case Get(postId, user, password) => 
+          val response = for {
+              status <- (publisher ? GetStatus(postId)).mapTo[PostSTatus]
+              text <- (postStore ? Get(postId)).mapTo[Post]
+              auth <- (authService ? Login(user, password)).mapTo[AuthStatus]
+          } yield
+            if (auth.successful) Result(status, text)
+            else Failure("not authorized)
+          response pipeTo sender
+    }
+}
+```
+
+##### Risk delegation
+An actor is not limited to transforming the values which travel. It also can transform, for example, the lifecycle monitoring, or the semantics of how an actor works.
+
+- create subordinate to perform dangerous task
+- apply lifecycle monitoring
+- report success/failure back to requestor
+- ephemeral actor shuts down after each task
+
+For example, let's say we have, a `FileWorker` here, which is an actor which can write things to files. And let's say we have a request here to write something. The File Worker will try to do that but we know that during IO many things can go wrong. So this write just might fail, then of course there will be an exception and the supervisor will handle it. 
+![Filewriter 1](./resources/filewriter1.png)
+
+But even though the file worker might be restarted, for example there would be no reply to this request, because the processing failed. And the only way for the client to determine that it was not successful, is to wait for a timeout to happen. That can take a lot of time, because you need to foresee; IO operations could take some seconds, and then a reasonable timeout window would be impractically long.
+
+What we can do is to wrap this FileWorker's function in another actor. Let's call it FileWriter. And then the write does not go here anymore, it is sent here. The FileWriter will create a worker and supervise it and monitor it. And then, well, successful results could come back, or it might fail, or terminate before sending a successful result.
+
+![Filewriter 2](./resources/filewriter2.png)
+
+No matter what, the FileWriter itself did not perform the risky part, so it is a lot less likely to fail. Therefore the writer, very likely can respond, done or failed, making the interaction with this FileWorker more safe.
+
+```scala
+class FileWriter extends Actor {
+    var workerToCustomer = Map.empty[ActorRef, ActorRef]
+    override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
+    def receive = {
+        case Write(contents, file) =>
+            val worker = context.actorOf(Props(new FileWorker(contents, file, self)))
+            context.watch(worker)
+            workerToCustomer += worker -> sender
+        case Done => workerToCustomer.get(sender).foreach(_ ! Done)
+            workerToCustomer -= sender
+        case Terminated(worker) => workerTOCustomer.get(worker).foreach(_ ! Failed)
+            workerToCustomer -= worker
+    }
+}
+```
+
+We have the FileWriter, and when it gets it a write command, it will create a new FileWorker for the file, and tell it to respond to the FileWriter. Then we watch it, and we also need to keep track of for whom this particular worker is performing the work. So we can send back the done or failed messages. Then, if anything goes wrong, we have a stopping strategy. That means that the worker will not be restarted. And in the end we either get a done message, or the actor terminates. Whichever happens first will be successful, because we look into the map for the sender, this is now the worker actor and if there is still contents in the map, then we send the done message and remove this one. This means that when it terminates later this one won't find anything anymore. But if it terminates without having sent a done message, we send a failed to the client.
+
+
+### Scalability
+Scalability > performance. Making the system faster will usually mean optimizing it for running on one CPU. But when multiple clients use the system, tehse optimizations will not  scale anymore after a certain point. 
+
+Let's draw some plots.
+![Scalability](./resources/scalability.png)
+
+The blue plot is the ideal scenario when the response time remains constant whenever clients count. The green plot is real-life situation. Scaling the system means moving req/s limit (red plot) as high as possible. 
+
+What does that mean in terms of implementing an actor system? One actor can process only exactly one message at any given time. You need to have multiple actors working in parallel to make system for more rps. 
+
+One pattern to do this is start new actors for every requests. ANother one is to have replicas of actors, which could perform a certain task, and if these actors are stateless then these replicas can run concurrently. 
+
+Lets look at actor calculating mortgages. And when a client requests, it sends a message, and then the mortgage service will calculate the conditions, and reply back with an interest rate, for example. Now if this calculation is moderately complex, then it will take some time, and we could, for example, scale it out by having multiple workers to perform the task. It is not necessary to have one per request. It could be a pool of, say five or ten, and then they can use at most five or ten CPUs completely for this purpose. By not having one actor per request, it is easy to limit the parallelism, which is allowed.
+
+Because of async message passing, the client here does not know whether MortgageService is doing the calculation or it is done by workers. This means that we can more CPUs in a single tasks. 
+
+There are different schemes for routing messages to worker pools:
+- stateful (round robin, smallest queue, adaptive, ...). Stateful means that the routing algorithm itself needs to keep some state. For example round robin needs to keep a count.
+- stateless (random, consistent hashing, ...). in general, stateless routing might be preferable, because that can even happen, in parallel, by multiple routers, because they don't need to share anything.
+
+#### Round-robin routing
+The most easily understood routing scheme is the round-robin one.
+- equal distribution of messages to routees
+- hiccups or unequal message processing times introduce imbalance
+- imbalances lead to larger spread in latency spectrum
+
+![r-r](./resources/round_robin.png)
+
+You have the router here, incoming messages, and let's say we have three targets. One, two, and three here. Then the first request will go here. The second will go here. Third will go here, then it starts over. This means that the distribution of messages to these routees here will be quite close to equal at any given point in time. But that also means that if, for example, actor one here experiences failure and the restart takes a bit, then it will still receive the same incoming rate of messages. So, the mailbox of this one will get more full than the other two.
+
+And that means that messages which go to number one, which is 1/3rd the incoming messages here will experience a higher processing latency, because there is a mailbox in here, which the actor needs to work off, in order to get to the current message.
+
