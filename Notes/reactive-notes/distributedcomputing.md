@@ -35,7 +35,7 @@ Remote address example with akka system using TCP protocol, actor system is name
 
 Every actor is identified by at least one URI. Multiple URI could occur if actor system is reachable by multiple protocols or multiple IP addresses.
 
-####Difference between ActorRef and ActorPath
+#### Difference between ActorRef and ActorPath
 
 ActorPath has relationship to it ActorRef: actor names are unique within a parent, but once the terminated message has been delivered for a child, the parent knows that the name can be reused. It could create an actor which has exactly the same name but it will not be the same actor, the ActorRef will be a different one. Therefore, you should keep in mind that ActorPath is just the full name of the actor and the ActorPath exists whether the actor exists or not. An ActorRef on the other hand point exactly to one actor, which was stareted at some point, an 'incarnation'.
 
@@ -579,7 +579,8 @@ There are different schemes for routing messages to worker pools:
 - stateful (round robin, smallest queue, adaptive, ...). Stateful means that the routing algorithm itself needs to keep some state. For example round robin needs to keep a count.
 - stateless (random, consistent hashing, ...). in general, stateless routing might be preferable, because that can even happen, in parallel, by multiple routers, because they don't need to share anything.
 
-#### Round-robin routing
+#### Stateful algorhitms
+##### Round-robin routing
 The most easily understood routing scheme is the round-robin one.
 - equal distribution of messages to routees
 - hiccups or unequal message processing times introduce imbalance
@@ -591,3 +592,193 @@ You have the router here, incoming messages, and let's say we have three targets
 
 And that means that messages which go to number one, which is 1/3rd the incoming messages here will experience a higher processing latency, because there is a mailbox in here, which the actor needs to work off, in order to get to the current message.
 
+#### Smallest mailbox routing
+This requires all the routees to be local so the message queue can be inspected. It obviously does not work over the network, and also, the cost of looking into the mailbox and counting the messages in there, is rather high.
+
+These data structures are concurrent and need to be properly synchronized and they're not as cheap to traverse as a normal collection is. This means that this routing cost is rather high, and only worth it if the job to be performed takes more time than that. But in that case, the imbalances introduced between different processing speeds of the actors are evened out by the algorithm, and the latency which is experienced by clients, is more consistent.
+
+##### Shared msg queue
+![shared queue](./resources/shared_queue.png)
+Actors are sharing the same messages queue and always process the oldest message in the queue. The most efficient implementation of this scheme is that they really do share the same work queue.
+
+There is the balancing dispatcher in Akka for achieving that, but that requires the routees to be local. This will give the most homogeneous latency which you can achieve. 
+
+##### Adaptive routing
+- requires feedback about processing times, latencies, queue sizes from worker actors
+- feedback can be sampled coarsely
+- steering the routing weights subject to feedback control theory
+    - oscillations
+    - over-dampening
+
+If we sample the imbalances over time, it can be rather coarse. It doesn't need to happen per message, it could be once per second, or even less frequently. Then we can gather this data and use them to steer the routing weights. So if we have the incoming message stream to routing actor, and this actor is adaptive router with his routees.
+
+![adaptive](./resources/adaptive.png)
+
+The routees will periodically send back the feedback of, for example, how full their queue was at this second, or what the CPU load is on that node, because they could run on different nodes. And then the router actor has an algorithm inside, which uses this information to change the relative weights of where messages shall go. For example, more frequently to actor 1, less frequently to actor 2, if this node is currently under more load. This can be a good compromise, but it requires the steering of these weights to be done carefully, because other wise you can introduce oscillations or over-dampening, so that the reaction times will become longer than necessary. In order to research this more completely refer to feedback control theory.
+
+#### Stateless algorhitms
+##### Random routing
+The routing algorithms we looked at so far have all been stateful. The router itself needed to keep information. For example, the round-robin needed a counter where the last message was sent. This can lead to some routing overhead because the decision depends on something which is shared. If you use random routing, for example, then, in principle, no router is necessary.
+
+Random routing:
+- asymptotically equal distribution of messages to routees
+- no shared state necessay: low routing overhead
+- works with several distributed routers to the same routees
+- can stochastically lead to imablances
+
+![random-routing](./resources/random-routing.png)
+
+In such case we are just randomly distribute messages between routees and therefore do not need any intermediate router node. Each sender of a message to this set of actors randomizes, on its own, where the actual message goes. 
+
+The problem with it is that well the process is random. So, there are also, there is the probability that for example, node number one, might for a certain time window, get more messages than nodes two and three. Asymptotically, these will even out. But in the real running program, it might be observable.
+
+##### Consistent hashing
+Another stateless routing scheme, is that of splitting up the incoming message stream, consistently, according to some criteria.
+- splitting incoming message stream according to some criteria
+- bundle substreams and send them to the same routees consistently
+- can exhibit systematic imbalances based on hashing function
+- different latencies for parts of the input spectrum
+- no shared state necessary between different routers to the same targets
+
+![cons-hashing](./resources/cons_hashing.png)
+
+Let's say, we have the black part, the red part, and the green part of the message stream. And all messages which match green color, always go to routee number 3. This means that there also does not mean to be a central authority here during the routing. But it also means that the sub stream need to be chosen, such that they are of equal weight. Otherwise, it will lead to systematic inbalances between the processing times for the three routees.
+
+This scheme has another advantage. Up to now, it was not really deterministic which message comes to which node, or which routee. So, one, two, and three, needed to be identical actors. And if another request comes in later, it will have no correlation, or it cannot require any correlation with an earlier request, because the state of these reactors is not shared. Splitting up the message stream, according to some criterion allows us, to, for example, have all requests related to a certain user go to concrete actor. And if the user is the important state to be kept, then well, everything pertaining to my user, for example, always goes to routee number one. And then, subsequent messages could have a common interest correlation because they all go to the same target, always. And updates to my user for example
+at number one, would be safe because later messages will see the updated state. This means that consistent hashing routing can be used to replicate stateful actors. 
+
+Consistent hashing can be used if substreams correspond to independent parts of the state. Multiple writers to the same state require appropriate data structures and are eventually consistent. 
+
+#### Replication of stateful actors
+It is quite easy to see that persistent stateful actors can be replicated as well. When something goes wrong, we just need to recover the actor, and that could happen at the different location.
+
+Let's say node A, we have our actor here. If that node crashes and is not recoverable, then on node B, we can just replay the state of actor A and resurrect it. This will also require a certain message router, which first sends messages here, and then after the crash, switches to the new instance.
+
+![replication](./resources/replication.png)
+
+And if we are using event sourcing, we can even optimize this process. This second copy of A could be started right away, but it could be inactive and only, replay the event stream which generate, which is generated by Ą. So, the event store, and then recovery of A in the event of failure takes very little time.
+
+All the features seen so far, have been made possible by the design of the actor model. Asynchronous message passing gives us **vertical scalability**, so the ability to run a process in parallel on the same node on multiple CPUs. And location transparency, which means hiding everything behind ActorRef and remoting does not look different, enables **horizontal scalability**. That means running the computation not on one node, but on a cluster of potentially hundreds of nodes.
+
+### Responsiveness
+
+Responsiveness is the ability to respond to input in time. A system which does not respond in time is not available. The goal of resilience is to be available. Responsiveness implies resilience to everload scenarios. 
+
+#### Exploit parallelism
+
+Performing queries sequentially adds up latency:
+```scala
+class PostSummary(...) extends Actor {
+    implicit val timeout = Timeout(500.millis)
+    def receive = {
+        case Get(postId, user, password) =>
+            val response = for {
+                status <- (publisher ? GetStatus(postId)).mapTo[PostStatus]
+                text <- (postStore ? Get(postId)).mapTo[Post]
+                auth <- (authService ? Login(user, password)).mapTo[AuthStatus]
+            } yield if (auth.successful) Result(status, text)
+                    else Failure("not authorized")
+            response pipeTo sender
+    }
+}
+```
+
+Let us first look at the nominal case and see what we can do there. PostSummary actor fires off requests to different backend services, and aggregates them and then responds to the sender when everything has been received. But what we do here is, we ask one actor and when we get the reply, we ask another one.  When we get the reply, we ask the third one. And once we have all three of them, we construct the response which can be result of failure. And then pipe it back to the sender.
+
+This adds the call latencies to all these three actors together before the final result can be dispatched. This PostSummary actor will respond quite a lot sooner if we were intead to fire off the requests in parallel.
+
+```scala
+class PostSummary(...) extends Actor {
+    implicit val timeout = Timeout(500.millis)
+    def receive = {
+        case Get(postId, user, password) =>
+            val status = (publisher ? GetStatus(postId)).mapTo[PostStatus]
+            val text = (postStore ? Get(postId)).mapTo[Post]
+            val auth = (authService ? Login(user, password)).mapTo[AuthStatus])
+            val response = for (s <- status; t <- text; a <- auth) yield {
+                if (a.successful) Result(s,t) else Failure("not authorized")
+            }
+            response pipeTo sender
+    }
+}
+```
+
+So, we ask in parallel, and then we tie the resulting futures together in one full comprehension, to compute the result, and this will reduce the latency. Obviously, the slowest of these three actors to respond will define how long it takes the PostSummary actor to respond in turn. Once all opportunity for parallelism has been exploited, the next step is to look at the responsiveness of each single component, and try to reduce the latency time there.
+
+#### Load vs responsiveness
+
+When incoming request rate rises, latency typically rises. 
+- avoid dependency of processing cost on load
+- add parallelism elastically (resizing routers)
+
+One thing which should be avoided is that the processing cost depends on how loaded your system is, because that will amplify problems when users start to hit. Because you built in something which is for example O(n^2) from the number of current users in your system. This mean choosing data structures and algorithms which preferably exhibit linear or log complexity.
+
+Once you have reduced the time it takes to process a single request as far as is practical or desirable, then you need to add parallelism when needed. For example using the scalability patterns with different routing strategies and pools which you can use. 
+
+When the rate exceeds the systems capacity requests will pile up:
+- Processing gets backlogged
+- Clients timeout, leading to unnecessary work being performed
+
+But inevitably, every system has a certain limit, and once the system's capacity is reached, requests will start piling up. This means that the processing get backlogged, queues fill, and the latency rises for everyone using the system.
+
+#### Circuit breaker
+In order to avoid all issues mentioned before, you can use the Circuit Breaker pattern and implementation of which comes with Akka. 
+```scala
+class Retriever(userService: ActorRef) extends Actor {
+    implicit val timeout = Timeout(2.seconds)
+    val cb = CircuitBreaker(context.system.scheduler,
+        maxFailures = 3,
+        callTimeout = 1.second,
+        resetTimeout = 30.seconds
+    )
+
+    def receive = {
+        case Get(user) =>
+            val result = cb.withCircuitBreaker(userService ? user).mapTo[String]
+            ...
+    }
+}
+```
+
+Let's use an example here, where we want to contact the user service and ask it about a certain user. We want to make this resilient against the user service being overloaded or just constantly failing. So this ask (userService ? user) returns a future and the circuit breaker wraps this future and looks at whether it succeeds and when it succeeds. The configuration of it is given here. The call timeout is one second. So it checks for every future put in here, whether it was completed within one second. And if it was not, it increases a failure counter. And when that reaches three, then the circuit breaker will open and all subsequent requests will fail immediately wthout contacting the user service.
+
+This takes the pressure off the user service and makes the system respond a lot faster. Then, as requests keep coming in, every 30 seconds the circuit breaker will allow one request through, to see if it succeeds.
+And if that is the case, then the circuit breaker closes again, and things will proceed normally. But if that also fails, then it will open circuit breaker again for another 30 seconds.
+
+You'll notice here that the timeout for the ask operation is two seconds, while the call timeout for the circuit breaker was one second. And that can come in handy, that you say a single request may take two or even five seconds, but if three in a row are slower than one second, I want the circuit breaker to open.
+
+This pattern is a good way to separate two components such that failures in one do not influence the other. But it does not completely isolate actors if they happen to run on the same dispatcher.
+
+#### Bulkheading
+The last thing we need to consider is to segregate the resources available to different parts of your system to make them independent from each other.
+
+For example, you have that part of the system which is responsible for sending a response to the client. And that part needs to function as long as possible, even if all the back ends services are down. This can be achieved by configuring these actors to run on different nodes for example, or on the same host to run on different dispatchers. You can configure this if you create the props of your actors and say, with dispatcher, saying for example compute jobs in this case. 
+```scala
+Props[MyActor].withDispatcher("compute-jobs")
+```
+And that will make this actor run on a different thread pool than its parent for example. If you do not specify this, actors run on the so-called default dispatcher.
+
+You can configure another dispatcher just by putting another config section in your `application.conf` with the name you gave in the with dispatcher method. 
+```
+compute-jobs.fork-join-executor {
+    parallelism-min = 4
+    parallelism-max = 4
+}
+```
+For example, fork-join-executor and this locks it down to exactly four threads, which you reserve for this kind of compute job. While doing this, you should keep in mind that configuring many more threads than you have CPUs in your system can defeat the purpose of this bulk heading, because then these threads will compete for the available CPU cores.
+
+#### Failures vs responsiveness
+Detecting failure in distributed systems takes time because the only thing you can observe is that you do not receive anything. And, you need to give yourself a timeout for that.
+
+There are systems where you can't afford to wait and you have for example a back up system which you need to switch to immediately. But obviously, this is limited in latency to how frequently you check that the prime system is up. Where there is not enough you can do nothing but immediately always send to all nodes to recover immidiately from state on backup node.
+
+### Summary
+
+![principles](./resources/4_principles.png)
+
+We have seen how event-driven systems can **scale vertically**, because you can dispatch the processing of events to any number of CPU cores in your system. And if you add the ability to send events over the network, so you make your system location transparent, that adds **horizontal scalability**, because you can run your computation on whole cluster of nodes.
+
+
+But the quality which we want to achieve in the end is that the system which we construct responds to inputs, giving the correct outputs. And this demands not only **scalability**, which we get by being **event-driven** and **location transparent**, but also **resilient**, which means that failure is contained and fixed by delegation. 
+
+Therefore, we can see how **responsiveness** ties together all the principles of reactive programming including **resilience**, **scalability**, and its **event-driven** nature.
