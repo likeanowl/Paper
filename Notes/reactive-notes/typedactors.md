@@ -272,3 +272,437 @@ greeterRef ! Stop
 greeterKit.runOne()
 greeterKit.isAlive must be(false)
 ```
+
+## Akka typed facilities
+When designing actor systems you will frequently find yourself in a position where one actor needs to offer multiple protocols, needs to speak to multiple other parties.
+
+![multiple protocols example](./resources/multiple_protocols.png)
+On this example diagram we can see that a secretary of professor needs to implement a buyer protocol also to be able to buy a book from seller.
+
+Let's recall a buying protocol from past week lecture:
+```scala
+case class RequestQuote(title: String, buyer: ActorRef[Quote])
+case class Quote(price: BigDecimal, seller: ActorRef[BuyOrQuit])
+
+sealed trait BuyOrQuit
+case class Buy(address: Address, buyer: ActorRef[Shipping]) extends BuyOrQuit
+case object Quit extends BuyOrQuit
+
+case class Shipping(date: Date)
+```
+
+Lets sketch the secretary by describing at least one of its messages:
+```scala
+sealed trait Secretary
+
+case class BuyBook(title: String, maxPrice: BigDecimal, seller: ActorRef[RequestQuote]) extends Secretary
+
+def secretary(address: Address): Behavior[Secretary] = 
+    Behaviors.receiveMessage {
+        case BuyBook(title, maxPrice, seller) => seller ! RequestQuote(title, ???)
+        ...
+    }
+```
+
+When implementing the behavior behind this message we run into a problem: in case of the buy book message we need to send a request quote message to the seller and this request quote message needs to describe where the quote shall be sent. But a quote message is not part of the vocabulary of the secretary. To help with this Akka typed offers what is called a **message adapter**
+
+### Akka typed adapters
+In order to use message adapters we need to wrap a foreign protocols messages in our own messages so that we can process these.
+```scala
+sealed trait Secretary
+case class BuyBook(title: String, maxPrice: BigDecimal, seller: ActorRef[RequestQuote]) extends Secretary
+case class QuoteWrapper(msg: Quote) extends Secretary
+case class ShippingWrapper(msg: Shipping) extends Secretary
+```
+In case of the secretary we simply add two new messages: a `QuoteWrapper` that wraps a quote coming from a seller and the `ShippingWrapper` that does the same for the shipping message. 
+
+With this adapters we now can implement behavior for Secretary:
+
+```scala
+def secretary(address: Address): Behavior[Secretary] = 
+    Behaviors.receivePartial {
+        case (ctx, BuyBook(title, maxPrice, seller)) => 
+            val quote: ActorRef[Quote] = ctx.messageAdapter(QuoteWrapper)
+            seller ! RequestQuote(quote)
+            buyBook(maxPrice, address)
+    }
+```
+
+In order to obtain the ActorRef where the `Quote` shall be sent we use `context.messageAdapter` and specify a function that wraps one type of message into another. Here we recall that Scala case classes have a companion object that is of a function type. It turns the parameters of the case class into an instance of the case class so in this case we turn a `Quote` into a `QuoteWrapper` message. This results in an ActorRef for quotes that we can happily include in the request code message that is sent to the seller.
+
+After having initiated this buyer-seller protocol the secretary switches into the buy book mode, remembering the max price and the address where the book shall be sent to. The buy book behavior is below:
+
+```scala
+def buyBook(maxPrice: BigDecimal, address: Address): Behaivor[Secretary] = 
+    Behaviors.receivePartial {
+        case (ctx, QuoteWrapper(Quote(price, session))) =>
+            if (price > maxPrice) {
+                session ! Quit
+                Behaviors.stopped
+            } else {
+                val shipping = ctx.messageAdapter(ShippingWrapper)
+                session ! Buy(address, shipping)
+                Behaviors.same
+            }
+        case (ctx, ShippingWrapper(Shipping(date))) =>
+            Behaviors.stopped
+    }
+```
+
+### Alternative: declare messages for protocol participants
+The protocol definition can also attach roles to messages:
+- RequestQuote and BuyOrQuit extend BuyerToSeller
+- Quote and Shipping extend SellerToBuyer
+
+This allows more concise message wrappers, e.g. 
+```scala
+case class WrapFromSeller(msg: SellerToBuyer) extends Secretary
+```
+
+### Child actors for protocol sessions
+We have seen how message adapters can be used to handle multiple different protocols within the very same actor. An alternative that is also very much supported by the notion that actors come in systems is to use a child actor for handling different protocols. In this case the overall messaging architecture would look differently.
+
+![bs child actors](./resources/bs_child_actors.png)
+
+We have the professor here and of course the secretary these two exchange messages as previously but now the secretary creates a child actor with a suitable behavior that implements the buyer protocol and it is this child actor that confers with the seller in order to acquire the book. 
+
+In addition to the buy book message the secretary now does not need the buyer protocol but it needs another protocol that will allow it to speak with its buyer child actor, because it needs to be informed whether the book has been bought or not bought.
+
+```scala
+case class BuyBook(title: String, maxprice: BigDecimal, seller: ActorRef[RequestQuote]) extends Secretary
+case class Bought(shippingDate: Date) extends Secretary
+case object NotBought extends Secretary
+
+def secretary(address: Address): Behavior[Secretary] = 
+    Behaviors.receive {
+        case (ctx, BuyBook(title, maxPrice, seller)) =>
+            val session = ctx.spawnAnonymous(buyBook(maxPrice, address, ctx.self))
+            seller ! RequestQuote(title, session)
+            ctx.watchWith(session, NotBought)
+            Behaviors.same
+        case (ctx, Bought(shippingDate)) => Behaviors.stopped
+        case (ctx, NotBought) => Behaviors.stopped
+    }
+```
+
+We now do not use message adapter but `context.spawnAnonymous` to create an actor with the buy book implementation that speaks the buyer protocol. This child actor will make the internal decision about buying or not buying the book.  Then the request quote is sent by the secretary to introduce the seller and the buyer actor. 
+
+When delegating functions to child actors we know that we need to make sure to handle all cases including when that child actor fails or becomes permanently unreachable. The **Deathwatch** feature is of course also available here and it has one additional feature: there is a `watchWith` method on the actor context that allows the specification of which normal message to be injected into the secretary in case death watch is triggered. This means that we can conveniently handle all the responses. 
+
+Now the buyer implementation simply needs to stop when the transaction is aborted or it needs to send to the reply to to the parent actor and that it has successfully bought the book.
+
+```scala
+def buyBook(maxPrice: BigDecimal, address: Address, replyTo: ActorRef[Bought]) = 
+    Behaviors.receive[SellerToBuyer] {
+        case (ctx, Quote(price, session)) =>
+            if (price > maxPrice) {
+                session ! Quit
+                Behaviors.stopped
+            } else {
+                session ! Buy(address, ctx.self)
+                Behaviors.same
+            }
+        case (ctx, Shipping(date)) =>
+            replyTo ! Bought(date)
+            Behaviors.stopped
+    }
+```
+
+### Defer handling a message
+Another useful utility is the ability to defer handling a message until the actor is ready for it. The need for this arises, for example, outside of regulated and formalized protocols when an actor initializes. It first needs to exchange messages with other actors to acquire resources and get initialization parameters and then it will be ready to process requests, but requests that arrive before the actor isready should not be dropped. It would be nicer if we could just handle them after initialization is complete. The solution here is to stash messages that are currently not handled inside a buffer for later. 
+
+Akka Typed provides such a stash buffer that we can readily use. It is parameterized by the type of message that it can hold and by its capacity. Once the capacity is exceeded it will throw an exception which if not handled will terminate the actor. Having a finite capacity is a good thing because it lets you always reason about the maximum resource usage of this actor.
+
+```scala
+val initial = Behaviors.setup[String] { ctx =>
+    val buffer = StashBuffer[String](100)
+
+    Behaviors.receiveMessage {
+        case "first" => buffer.unstashAll(ctx, running)
+        case other => 
+            buffer.stash(other)
+            Behaviors.same
+    }
+}
+```
+
+### Typesafe service discovery
+
+Actor A provides protocol P. Actor B needs to speak with an actor implementing protocol P.
+
+- in a local systems dependencies can be injected by first creating A and then pass an ActorRef[P] to B
+- dependency graph can become unwieldy
+- this approach does not work for a cluster
+
+Solution: cluster-capable well-known service registry at each ActorSystem:
+```scala
+val ctx: ActorContext[_] = ???
+ctx.system.receptionist: ActorRef[Receptionist.Command]
+```
+
+An ActorRef for speaking with this receptionist is available in the system that is accessible through the actor context. In order to allow the receptionist to introduce actors to one another across the cluster across the network we need to have a handle a description of a protocol that can be serialized and sent over the wire. 
+
+Create a serializable cluster-wide identifier for the protocol:
+
+```scala
+val key = ServiceKey[Greeter]("greeter")
+```
+
+This handle is called a `ServiceKey`. A service key is a strongly typed object, so this is a service key for greeter messages. So for the protocol that starts with a greeter message and the name for this protocol is specified to be greeter. This key can be constructed on any host in a cluster and used to register services or to ask for them.
+
+Obtain an ActorRef[Greeter], for example by creating an actor:
+```scala
+val greeter = ctx.spawn(greeter.behavior, "greeter")
+```
+
+Register the reference with the receptionist:
+```scala
+ctx.system.receptionist ! Register(key, greeter)
+```
+
+## Akka typed persistence
+We recall that the principal of Akka Persistence is that actors take note of changes that occur.
+So that these changes can later be replayed, for example: after a system reboot.
+
+Persistent actors take note of changes:
+ - incoming commands may result in events
+ - events are persisted in the journal
+ - persisted events are applied as state changes
+
+This pattern lends itself well to a type-safe expression:
+- one function turns commands into events
+- one function codifies the effect of an event on the state
+
+As an illustrating example let us revisit the case of a money transfer between Alice and Bob.
+![alice and bob example](./resources/alice_bob_transfer.png)
+We have Alice and Bob as bank accounts. Here we model them as a part of a ledger service. We focus on the Transfer. This actor will have to perform the transfer in two steps.
+
+First withdraw money from Alice, then put money into Bobs account. The goal is that this transfer can be interrupted by a system crash at any point and time and needs to restart until it runs to completion.
+If for some reason the money cannot be put into Bobs account, the transaction needs to be rolled back and the money needs to be credited again to Alice.
+
+```scala
+sealed trait Ledge
+case class Debit(account: String, amount: BigDecimal, replyTo: ActorRef[Result]) extends Ledger
+case class Credit(account: String, amount: BigDecimal, replyTo: ActorRef[Result]) extends Ledger
+```
+
+Here we assume that the Ledger service is an actor that speaks the ledger protocol.
+This one offers two commands: `Debit` and `Credit`. Both take an account name and amount of money and they have a 'replyTo', where the confirmation is sent as to whether this action was successful or not.
+
+Before diving into the implementation of the transfer saga actor, we take a look at the initialization of the actor system that will host it.
+
+```scala
+ActorSystem(Behaviors.setup[Result] { ctx =>
+    val ledger = ctx.spawn(Ledger.initial, "ledager")
+    val config = TransferConfig(Ledger, ctx.self, 1000.00, "Alice", "Bob")
+    val transfer = ctx.spawn(PersistentBehaviors.receive(
+        persistenceId = "transfer-1",
+        emptyState = AwaitingDebit(config),
+        commandHandler = commandHandler,
+        eventHandler = eventHandler
+    ), "transfer")
+
+    Behaviors.receiveMessage(_ => Behaviors.stopped)
+}, "Persistence")
+```
+
+After spawning the ledger actor, we describe the Transfer in a `TransferConfig` object. In this example we want to transfer one thousand currency units from Alice to Bob. We will use usually created ledger service and the result of this whole transaction shall be sent to this guardian actor.
+Next we need to spawn the transfer saga itself. In this case we use a different factory namely `PersistentBehaviors.receive`. As for any persistent actor this one needs a unique persistent id that describes this transfer so that when the actor system is restarted, for example, after a crash, all events that have been accumulated so far are replayed and the saga continues from the point where it left.
+
+The next item we need to supply is the state from which the saga shall start, the empty or initial state. In this case we are awaiting the debit from Alice's account according to this config. When the actor start up, it will initially have an empty event log so this will be the state that it wakes up in. As we will see later this will lead to the transfer contacting the ledger to deduct from Alice’s account.
+
+Let's describe saga's input commands: there are two steps -- debiting Alice and crediting Bob and each of them can succeed or fail.
+
+```scala
+sealed trait Command
+case object DebitSuccess extends Command
+case object DebitFailure extends Command
+case object CreditSuccess extends Command
+case object CreditFailure extends Command
+case object Stop extends Command
+```
+
+In terms of events, we need to describe the progress that is made during this transfer.
+
+```scala
+sealed trait Event
+case object Aborted extends Event
+case object DebitDone extends Event
+case object CreditDone extends Event
+case object RollbackStarted extends Event
+case object RollbackFailed extends Event
+case object RollbackFinished extends Event
+```
+
+As the third element, aside command and events, we have the internal state, that the actor manages. The state in this case is described as an algebraic data type as well so that we can distinguish between the different states for a different steps of the protocol.
+
+The api offered by the Akka typed persistence is inspired by final state machines. Here the state of the actor is in determines the function that will handle incoming commands.
+
+```scala
+sealed trait State
+case class AwaitingDebit(config: TransferConfig) extends State
+case class AwaitingCredit(config: TransferConfig) extends State
+case class AwaitingRollback(config: TransferConfig) extends State
+case class Finished(result: ActorRef[Result]) extends State
+case class Failed(result: ActorRef[Result]) extends State
+
+val commanHandler: CommandHandler[Command, Event, State] = 
+    CommandHandler.byState {
+        case _: AwaitingDebit => awaitingDebit
+        case _: AwaitingCredit => awaitingCredit
+        case _: AwaitingRollback => awaitingRollback
+        case _ => (_, _, _) => Effect.stop
+    }
+```
+
+### Single-use adapters
+Sometimes a single response is enough, follow-ups shall be dropped. An Actor's lifecycle makes this easy to express.
+```scala
+def adapter[T](ctx: ActorContext[Command], f: T => Command): ActorRef[T] = 
+    ctx.spawnAnonymous(Behaviors.receiveMessage[T] { msg =>
+        ctx.self ! f(msg)
+        Behaviors.stopped
+    })
+```
+
+We can construct an ActorRef by spawning anonymous child actor, that just receives a single message of type T, applies the given function to the message to transform it into a command, sends it to the saga actor and then stops itself.
+
+### Handling a saga step
+With this utility we can come back and define the command handler of the awaiting debit state.
+
+```scala
+val awaitingDebit: CommandHandler[Command, Event, State] = {
+    case (ctx, AwaitingDebit(tc), DebitSuccess) => 
+        Effect.persist(DebitDone).andThen{ state =>
+            tc.ledger ! Credit(tc.to, tc.amount, adapter(ctx, {
+                case Success => CreditSuccess
+                case Failure => CreditFailure
+            }))
+        }
+    case (ctx, AwaitingDebit(tc), DebitFailure) => 
+        Effect.persist(Aborted)
+            .andThen((state: State) => tc.result ! Failure)
+            .andThenStop
+    case x => throw new IllegalStateException(x.toString)
+}
+```
+
+Looking at the event handler, we now need to describe what an effect each event shall have in any given state.
+
+```scala
+val eventHandler: (State, Event) => State = { (state, event) => 
+    (state, event) match {
+        case (AwaitingDebit(tc), DebitDone) => AwaitingCredit(tc)
+        case (AwaitingDebit(tc), Aborted) => Failed(tc.result)
+        case (AwaitingCredit(tc), CreditDone) => Finished(tc.result)
+        case (AwaitingCredit(tc), RollbackStarted) => AwaitingRollback(tc)
+        case (AwaitingRollback(tc), RollbackFinished) => Failed(tc.result)
+        case (AwaitingRollback(tc), RollbackFailed) => Failed(tc.result)
+        case x => throw new IllegalStateException(x.toString)
+    }
+}
+```
+
+### Taking the saga back up after recovery
+The only thing we need to take care of: what shall happen after recovery? If this actor is restarted after a system crash, it will replay all the events and apply their effects on the state, reaching the same state that it was in before the crash. One thing that doesn't happen during a replay is the command handling and in the command handler we send the commands to ledger to continue the process.
+
+When waking up after a crash, the saga may find itself in any state:
+- needs to take up the transfer again while still successful
+- needs to take up the rollback again if already failed
+- needs to signal completion if already terminated
+
+To this end the persistent behavior provides another combinator called `onRecoveryCompleted`. This corresponds to the recovery completed object that is send to the recovery function in untyped
+Akka persistence.
+```scala
+PersistentBehaviors.receive(
+    ...
+).onRecoveryCompleted {
+    case (ctx, AwaitingDebit(tc)) =>
+        ledger ! Debit(tc.from, tc.amount, adapter(ctx, {
+            case Success => DebitSuccess
+            case Failure => DebitFialure
+        }))
+}
+```
+### Stopping saga recovery
+Finally, if after the replay of all events a final state has already been reached, the saga has actually completed before the system crashed. It has been woken up presumably because the message did not arrive at the actor that spawn the saga informing that actor about a success or failure. Hence we need to send that again.
+
+```scala
+PersistentBehaviors.receive(
+    ...
+).onRecoveryCompleted {
+    ...
+    case (ctx, Finished(Result)) => 
+        println("still finished")
+        ctx.self ! CreditSuccess 
+        result ! Success
+    case (ctx, Failed(result)) =>
+        println("still failed")
+        ctx.self ! CreditSuccess
+        result ! Failure
+}
+```
+Unfortunately it is not possible to stop this actor from within the on recovery completed hook. Therefore we send a message to self that will lead to the termination of the actor.
+
+## Supervision in Akka Typed
+### Supervision revisited
+Supervision is the backbone of actor systems:
+- each actor may fail, in which case its suptervisor will step in
+- the supervisor can react to failure, e.g. by restarting the actor
+
+Placing the responsibility for deciding upon a restart outside the failing actor encapsulates the failure and lets it not spread across the rest of the system.
+
+There are some issues with Akka untyped supervision:
+- the failed actor is paused until the supervisor reacts
+- the failure may need to travel across the network, which forces the exception object serialization/deserialization
+- the failure notice contains too much information by default
+
+### Supervision in Akka typed
+
+For these reasons supervision in Akka typed is simplified. First of all, thedecision on whether to restart the actor is taken locally, and secondly the precise exception object, that caused the failure, is not available for the decision process. It is helpful also in this regard that akka typed actors are described as behaviors, that are merely functions from a message to the next behavior. 
+Since it is just a function, we can compose it with another function that catches exceptions that arise during the evaluation of the behavior and may catch some of them. Therefore, supervisor decorates the child actor's behavior with a selective restart strategy. 
+This means that the restart decision is taken locally, within the child actor's context and there is no need to send messages to supervisor. Any unhandled failure will lead to the immediate termination of the failed actor, triggering the `DeathWatch` and informing the parent of this actor's termination. 
+
+### Starting a supervised actor
+The supervisor may add supervision to any behavior:
+
+```scala
+ctx.stapwnAnonymous(
+    Behaviors.supervise(actor)
+        .onFailure[ArithmeticException](SupervisorStrategy.restart)
+)
+```
+
+This approach also allows the child actor to add its own supervision as desired. 
+
+### Information flow from actor to supervisor
+Akka typed shields the supervisor from the failed actor's state:
+- an exception may reference any object for transporting information
+- the failure may well be intrinsic to the request
+- keeping the exception confined to its origin prevents mistakes
+
+In case assistance is needed, regular messaging is the best choice. 
+
+Perhaps the most interesting detail about Akka typed supervision is that it is implemented without using any akka internal special features, it is just a behavior decorator.
+
+```scala
+def supervise[T](behavior: Behavior[T]): Behavior[T] =
+    new Restarter(behavior, behavior)
+
+class Restarter[T](initial: Behavior[T], behavior: Behavior[T]) extends ExtensibleBehavior[T] {
+    import akka.actor.typed.ActorContext
+
+    def receive(ctx: ActorContext[T], msg: T): Behavior[T] = {
+        import akka.actor.typed.Behavior.{start, canonicalize, validateAsInitial, interpretMessage}
+        try {
+            val started = validateAsInitial(start(behavior, ctx))
+            val next = interpretMessage(stared, ctx, msg)
+            new Restarter(initial, canonicalize(next, staretd, ctx))
+        } catch {
+            case _: ArithmeticException => new Restater(initial, validateAsInitial(start(initial, ctx)))
+        }
+    }
+
+    def receiveSignal(ctx: ActorContext[T], msg: Signal): Behavior[T] = ???
+}
+```
